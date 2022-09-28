@@ -39,7 +39,7 @@ pub fn logger_formatter_activate(
         w,
         "⭐ {} [activate] [{}] {}",
         make_emoji(level),
-        style(level, level.to_string()),
+        style(level).paint(level.to_string()),
         record.args()
     )
 }
@@ -55,7 +55,7 @@ pub fn logger_formatter_wait(
         w,
         "👀 {} [wait] [{}] {}",
         make_emoji(level),
-        style(level, level.to_string()),
+        style(level).paint(level.to_string()),
         record.args()
     )
 }
@@ -71,7 +71,7 @@ pub fn logger_formatter_revoke(
         w,
         "↩️ {} [revoke] [{}] {}",
         make_emoji(level),
-        style(level, level.to_string()),
+        style(level).paint(level.to_string()),
         record.args()
     )
 }
@@ -87,7 +87,7 @@ pub fn logger_formatter_deploy(
         w,
         "🚀 {} [deploy] [{}] {}",
         make_emoji(level),
-        style(level, level.to_string()),
+        style(level).paint(level.to_string()),
         record.args()
     )
 }
@@ -112,31 +112,32 @@ pub fn init_logger(
     };
 
     if let Some(log_dir) = log_dir {
-        let mut logger = Logger::with_env_or_str("debug")
-            .log_to_file()
+        let mut logger = Logger::try_with_env_or_str("debug")?
             .format_for_stderr(logger_formatter)
             .set_palette("196;208;51;7;8".to_string())
-            .directory(log_dir)
             .duplicate_to_stderr(match debug_logs {
                 true => Duplicate::Debug,
                 false => Duplicate::Info,
             })
             .print_message();
 
-        match logger_type {
-            LoggerType::Activate => logger = logger.discriminant("activate"),
-            LoggerType::Wait => logger = logger.discriminant("wait"),
-            LoggerType::Revoke => logger = logger.discriminant("revoke"),
-            LoggerType::Deploy => (),
-        }
+        let file_spec = FileSpec::default()
+            .directory(log_dir)
+            .discriminant(match logger_type {
+                LoggerType::Activate => "activate",
+                LoggerType::Wait => "wait",
+                LoggerType::Revoke => "revoke",
+                LoggerType::Deploy => "",
+            });
+        logger = logger.log_to_file(file_spec);
 
         logger.start()?;
     } else {
-        Logger::with_env_or_str(match debug_logs {
+        Logger::try_with_env_or_str(match debug_logs {
             true => "debug",
             false => "info",
-        })
-        .log_target(LogTarget::StdErr)
+        })?
+        .log_to_stderr()
         .format(logger_formatter)
         .set_palette("196;208;51;7;8".to_string())
         .start()?;
@@ -145,10 +146,10 @@ pub fn init_logger(
     Ok(())
 }
 
+pub mod cli;
 pub mod data;
 pub mod deploy;
 pub mod push;
-pub mod cli;
 
 #[derive(Debug)]
 pub struct CmdOverrides {
@@ -396,8 +397,8 @@ impl<'a> DeployData<'a> {
 
     fn get_sudo(&'a self) -> String {
         return match self.merged_settings.sudo {
-           Some(ref x) => x.clone(),
-           None => "sudo -u".to_string()
+            Some(ref x) => x.clone(),
+            None => "sudo -u".to_string(),
         };
     }
 }
