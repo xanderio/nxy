@@ -119,24 +119,14 @@ pub enum CheckDeploymentError {
 }
 
 async fn check_deployment(
-    supports_flakes: bool,
     repo: &str,
     extra_build_args: &[String],
 ) -> Result<(), CheckDeploymentError> {
     info!("Running checks for flake in {}", repo);
 
-    let mut check_command = match supports_flakes {
-        true => Command::new("nix"),
-        false => Command::new("nix-build"),
-    };
+    let mut check_command = Command::new("nix");
 
-    if supports_flakes {
-        check_command.arg("flake").arg("check").arg(repo);
-    } else {
-        check_command.arg("-E")
-                .arg("--no-out-link")
-                .arg(format!("let r = import {}/.; x = (if builtins.isFunction r then (r {{}}) else r); in if x ? checks then x.checks.${{builtins.currentSystem}} else {{}}", repo));
-    }
+    check_command.arg("flake").arg("check").arg(repo);
 
     for extra_arg in extra_build_args {
         check_command.arg(extra_arg);
@@ -170,31 +160,25 @@ pub enum GetDeploymentDataError {
 
 /// Evaluates the Nix in the given `repo` and return the processed Data from it
 async fn get_deployment_data(
-    supports_flakes: bool,
     flakes: &[deploy::DeployFlake<'_>],
     extra_build_args: &[String],
 ) -> Result<Vec<deploy::data::Data>, GetDeploymentDataError> {
-    futures_util::stream::iter(flakes).then(|flake| async move {
+    futures_util::stream::iter(flakes)
+        .then(|flake| async move {
+            info!("Evaluating flake in {}", flake.repo);
 
-    info!("Evaluating flake in {}", flake.repo);
+            let mut c = Command::new("nix");
 
-    let mut c = if supports_flakes {
-        Command::new("nix")
-    } else {
-        Command::new("nix-instantiate")
-    };
-
-    if supports_flakes {
-        c.arg("eval")
-            .arg("--json")
-            .arg(format!("{}#deploy", flake.repo))
-            // We use --apply instead of --expr so that we don't have to deal with builtins.getFlake
-            .arg("--apply");
-        match (&flake.node, &flake.profile) {
-            (Some(node), Some(profile)) => {
-                // Ignore all nodes and all profiles but the one we're evaluating
-                c.arg(format!(
-                    r#"
+            c.arg("eval")
+                .arg("--json")
+                .arg(format!("{}#deploy", flake.repo))
+                // We use --apply instead of --expr so that we don't have to deal with builtins.getFlake
+                .arg("--apply");
+            match (&flake.node, &flake.profile) {
+                (Some(node), Some(profile)) => {
+                    // Ignore all nodes and all profiles but the one we're evaluating
+                    c.arg(format!(
+                        r#"
                       deploy:
                       (deploy // {{
                         nodes = {{
@@ -206,13 +190,13 @@ async fn get_deployment_data(
                         }};
                       }})
                      "#,
-                    node, profile
-                ))
-            }
-            (Some(node), None) => {
-                // Ignore all nodes but the one we're evaluating
-                c.arg(format!(
-                    r#"
+                        node, profile
+                    ));
+                }
+                (Some(node), None) => {
+                    // Ignore all nodes but the one we're evaluating
+                    c.arg(format!(
+                        r#"
                       deploy:
                       (deploy // {{
                         nodes = {{
@@ -220,48 +204,41 @@ async fn get_deployment_data(
                         }};
                       }})
                     "#,
-                    node
-                ))
+                        node
+                    ));
+                }
+                (None, None) => {
+                    // We need to evaluate all profiles of all nodes anyway, so just do it strictly
+                    c.arg("deploy: deploy");
+                }
+                (None, Some(_)) => return Err(GetDeploymentDataError::ProfileNoNode),
             }
-            (None, None) => {
-                // We need to evaluate all profiles of all nodes anyway, so just do it strictly
-                c.arg("deploy: deploy")
+
+            for extra_arg in extra_build_args {
+                c.arg(extra_arg);
             }
-            (None, Some(_)) => return Err(GetDeploymentDataError::ProfileNoNode),
-        }
-    } else {
-        c
-            .arg("--strict")
-            .arg("--read-write-mode")
-            .arg("--json")
-            .arg("--eval")
-            .arg("-E")
-            .arg(format!("let r = import {}/.; in if builtins.isFunction r then (r {{}}).deploy else r.deploy", flake.repo))
-    };
 
-    for extra_arg in extra_build_args {
-        c.arg(extra_arg);
-    }
+            let build_child = c
+                .stdout(Stdio::piped())
+                .spawn()
+                .map_err(GetDeploymentDataError::NixEval)?;
 
-    let build_child = c
-        .stdout(Stdio::piped())
-        .spawn()
-        .map_err(GetDeploymentDataError::NixEval)?;
+            let build_output = build_child
+                .wait_with_output()
+                .await
+                .map_err(GetDeploymentDataError::NixEvalOut)?;
 
-    let build_output = build_child
-        .wait_with_output()
+            match build_output.status.code() {
+                Some(0) => (),
+                a => return Err(GetDeploymentDataError::NixEvalExit(a)),
+            };
+
+            let data_json = String::from_utf8(build_output.stdout)?;
+
+            Ok(serde_json::from_str(&data_json)?)
+        })
+        .try_collect()
         .await
-        .map_err(GetDeploymentDataError::NixEvalOut)?;
-
-    match build_output.status.code() {
-        Some(0) => (),
-        a => return Err(GetDeploymentDataError::NixEvalExit(a)),
-    };
-
-    let data_json = String::from_utf8(build_output.stdout)?;
-
-    Ok(serde_json::from_str(&data_json)?)
-}).try_collect().await
 }
 
 #[derive(Serialize)]
@@ -400,7 +377,6 @@ type ToDeploy<'a> = Vec<(
 async fn run_deploy(
     deploy_flakes: Vec<deploy::DeployFlake<'_>>,
     data: Vec<deploy::data::Data>,
-    supports_flakes: bool,
     check_sigs: bool,
     interactive: bool,
     cmd_overrides: &deploy::CmdOverrides,
@@ -541,7 +517,6 @@ async fn run_deploy(
 
     for (deploy_flake, deploy_data, deploy_defs) in &parts {
         deploy::push::push_profile(deploy::push::PushProfileData {
-            supports_flakes,
             check_sigs,
             repo: deploy_flake.repo,
             deploy_data,
@@ -649,15 +624,14 @@ pub async fn run(args: Option<&ArgMatches>) -> Result<(), RunError> {
 
     if !opts.skip_checks {
         for deploy_flake in &deploy_flakes {
-            check_deployment(supports_flakes, deploy_flake.repo, &opts.extra_build_args).await?;
+            check_deployment(deploy_flake.repo, &opts.extra_build_args).await?;
         }
     }
     let result_path = opts.result_path.as_deref();
-    let data = get_deployment_data(supports_flakes, &deploy_flakes, &opts.extra_build_args).await?;
+    let data = get_deployment_data(&deploy_flakes, &opts.extra_build_args).await?;
     run_deploy(
         deploy_flakes,
         data,
-        supports_flakes,
         opts.checksigs,
         opts.interactive,
         &cmd_overrides,

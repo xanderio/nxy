@@ -44,7 +44,6 @@ pub enum PushProfileError {
 }
 
 pub struct PushProfileData<'a> {
-    pub supports_flakes: bool,
     pub check_sigs: bool,
     pub repo: &'a str,
     pub deploy_data: &'a super::DeployData<'a>,
@@ -93,30 +92,20 @@ pub async fn push_profile(data: PushProfileData<'_>) -> Result<(), PushProfileEr
         data.deploy_data.profile_name, data.deploy_data.node_name
     );
 
-    let mut build_command = if data.supports_flakes {
-        Command::new("nix")
+    let mut build_command = Command::new("nix");
+
+    build_command.arg("build").arg(derivation_name);
+
+    if data.keep_result {
+        let result_path = data.result_path.unwrap_or("./.deploy-gc");
+
+        build_command.arg("--out-link").arg(format!(
+            "{}/{}/{}",
+            result_path, data.deploy_data.node_name, data.deploy_data.profile_name
+        ));
     } else {
-        Command::new("nix-build")
-    };
-
-    if data.supports_flakes {
-        build_command.arg("build").arg(derivation_name)
-    } else {
-        build_command.arg(derivation_name)
-    };
-
-    match (data.keep_result, data.supports_flakes) {
-        (true, _) => {
-            let result_path = data.result_path.unwrap_or("./.deploy-gc");
-
-            build_command.arg("--out-link").arg(format!(
-                "{}/{}/{}",
-                result_path, data.deploy_data.node_name, data.deploy_data.profile_name
-            ))
-        }
-        (false, false) => build_command.arg("--no-out-link"),
-        (false, true) => build_command.arg("--no-link"),
-    };
+        build_command.arg("--no-link");
+    }
 
     for extra_arg in data.extra_build_args {
         build_command.arg(extra_arg);
