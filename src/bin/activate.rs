@@ -6,7 +6,7 @@
 
 use signal_hook::{consts::signal::SIGHUP, iterator::Signals};
 
-use clap::Clap;
+use clap::{Parser, Subcommand};
 
 use tokio::fs;
 use tokio::process::Command;
@@ -24,7 +24,7 @@ use thiserror::Error;
 use log::{debug, error, info, warn};
 
 /// Remote activation utility for deploy-rs
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(version = "1.0", author = "Serokell <https://serokell.io/>")]
 struct Opts {
     /// Print debug logs to output
@@ -38,7 +38,7 @@ struct Opts {
     subcmd: SubCommand,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Subcommand, Debug)]
 enum SubCommand {
     Activate(ActivateOpts),
     Wait(WaitOpts),
@@ -46,7 +46,7 @@ enum SubCommand {
 }
 
 /// Activate a profile
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 struct ActivateOpts {
     /// The closure to activate
     closure: String,
@@ -75,7 +75,7 @@ struct ActivateOpts {
 }
 
 /// Activate a profile
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 struct WaitOpts {
     /// The closure to wait for
     closure: String,
@@ -86,7 +86,7 @@ struct WaitOpts {
 }
 
 /// Activate a profile
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 struct RevokeOpts {
     /// The profile path to revoke
     profile_path: String,

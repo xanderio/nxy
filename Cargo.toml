@@ -11,19 +11,26 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "3.0.0-beta.2", features = [ "wrap_help" ] }
+clap = { version = "3.2.22", features = ["wrap_help", "derive"] }
 flexi_logger = "0.16"
 fork = "0.1"
-futures-util = "0.3.6"
+futures-util = "0.3.24"
 log = "0.4"
 merge = "0.1.0"
 notify = "5.0.0-pre.3"
 rnix = "0.8"
-serde = { version = "1.0.104", features = [ "derive" ] }
+serde = { version = "1.0.104", features = ["derive"] }
 serde_json = "1.0.48"
 signal-hook = "0.3"
 thiserror = "1.0"
-tokio = { version = "1.9.0", features = [ "process", "macros", "sync", "rt-multi-thread", "fs", "time" ] }
+tokio = { version = "1.9.0", features = [
+        "process",
+        "macros",
+        "sync",
+        "rt-multi-thread",
+        "fs",
+        "time",
+] }
 toml = "0.5"
 whoami = "0.9.0"
 yn = "0.1"
