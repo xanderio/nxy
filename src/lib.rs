@@ -4,6 +4,8 @@
 //
 // SPDX-License-Identifier: MPL-2.0
 
+use std::path::PathBuf;
+
 use rnix::{types::*, SyntaxKind::*};
 
 use merge::Merge;
@@ -12,10 +14,12 @@ use thiserror::Error;
 
 use flexi_logger::*;
 
-pub fn make_lock_path(temp_path: &str, closure: &str) -> String {
-    let lock_hash =
-        &closure["/nix/store/".len()..closure.find('-').unwrap_or_else(|| closure.len())];
-    format!("{}/deploy-rs-canary-{}", temp_path, lock_hash)
+pub fn make_lock_path(temp_path: &str, closure: &str) -> PathBuf {
+    let lock_hash = &closure["/nix/store/".len()..closure.find('-').unwrap_or(closure.len())];
+    let mut path = PathBuf::new();
+    path.push(temp_path);
+    path.push(format!("deploy-rs-canary-{}", lock_hash));
+    path
 }
 
 const fn make_emoji(level: log::Level) -> &'static str {

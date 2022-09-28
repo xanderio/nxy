@@ -252,8 +252,8 @@ pub async fn activation_confirmation(
 
     let (deleted, done) = mpsc::channel(1);
 
-    let mut watcher: RecommendedWatcher =
-        Watcher::new_immediate(move |res: Result<notify::event::Event, notify::Error>| {
+    let mut watcher: RecommendedWatcher = Watcher::new(
+        move |res: Result<notify::event::Event, notify::Error>| {
             let send_result = match res {
                 Ok(e) if e.kind == notify::EventKind::Remove(notify::event::RemoveKind::File) => {
                     debug!("Got worthy removal event, sending on channel");
@@ -269,7 +269,9 @@ pub async fn activation_confirmation(
             if let Err(e) = send_result {
                 error!("Could not send file system event to watcher: {}", e);
             }
-        })?;
+        },
+        notify::Config::default(),
+    )?;
 
     watcher.watch(&lock_path, RecursiveMode::NonRecursive)?;
 
@@ -303,29 +305,34 @@ pub async fn wait(temp_path: String, closure: String) -> Result<(), WaitError> {
         // TODO: fix wasteful clone
         let lock_path = lock_path.clone();
 
-        Watcher::new_immediate(move |res: Result<notify::event::Event, notify::Error>| {
-            let send_result = match res {
-                Ok(e) if e.kind == notify::EventKind::Create(notify::event::CreateKind::File) => {
-                    match &e.paths[..] {
-                        [x] if x == Path::new(&lock_path) => created.try_send(Ok(())),
-                        _ => Ok(()),
+        Watcher::new(
+            move |res: Result<notify::event::Event, notify::Error>| {
+                let send_result = match res {
+                    Ok(e)
+                        if e.kind == notify::EventKind::Create(notify::event::CreateKind::File) =>
+                    {
+                        match &e.paths[..] {
+                            [x] if x == Path::new(&lock_path) => created.try_send(Ok(())),
+                            _ => Ok(()),
+                        }
                     }
-                }
-                Err(e) => created.try_send(Err(e)),
-                Ok(_) => Ok(()), // ignore non-removal events
-            };
+                    Err(e) => created.try_send(Err(e)),
+                    Ok(_) => Ok(()), // ignore non-removal events
+                };
 
-            if let Err(e) = send_result {
-                error!("Could not send file system event to watcher: {}", e);
-            }
-        })?
+                if let Err(e) = send_result {
+                    error!("Could not send file system event to watcher: {}", e);
+                }
+            },
+            notify::Config::default(),
+        )?
     };
 
-    watcher.watch(&temp_path, RecursiveMode::NonRecursive)?;
+    watcher.watch(temp_path.as_ref(), RecursiveMode::NonRecursive)?;
 
     // Avoid a potential race condition by checking for existence after watcher creation
     if fs::metadata(&lock_path).await.is_ok() {
-        watcher.unwatch(&temp_path)?;
+        watcher.unwatch(temp_path.as_ref())?;
         return Ok(());
     }
 

@@ -221,7 +221,7 @@ pub async fn confirm_profile(
 
     let lock_path = super::make_lock_path(&temp_path, &deploy_data.profile.profile_settings.path);
 
-    let mut confirm_command = format!("rm {}", lock_path);
+    let mut confirm_command = format!("rm {}", lock_path.display());
     if let Some(sudo_cmd) = &deploy_defs.sudo {
         confirm_command = format!("{} {}", sudo_cmd, confirm_command);
     }
