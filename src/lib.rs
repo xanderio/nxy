@@ -170,7 +170,7 @@ pub struct CmdOverrides {
     pub dry_activate: bool,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct DeployFlake<'a> {
     pub repo: &'a str,
     pub node: Option<String>,
@@ -400,13 +400,15 @@ impl<'a> DeployData<'a> {
     }
 
     fn get_sudo(&'a self) -> String {
-        return match self.merged_settings.sudo {
+        match self.merged_settings.sudo {
             Some(ref x) => x.clone(),
             None => "sudo -u".to_string(),
-        };
+        }
     }
 }
 
+//TODO(xanderio): refactor function and remove allow
+#[allow(clippy::too_many_arguments)]
 pub fn make_deploy_data<'a, 's>(
     top_settings: &'s data::GenericSettings,
     node: &'a data::Node,

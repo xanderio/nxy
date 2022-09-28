@@ -374,6 +374,8 @@ type ToDeploy<'a> = Vec<(
     (&'a str, &'a deploy::data::Profile),
 )>;
 
+//TODO(xanderio): refactor function and remove allow
+#[allow(clippy::too_many_arguments)]
 async fn run_deploy(
     deploy_flakes: Vec<deploy::DeployFlake<'_>>,
     data: Vec<deploy::data::Data>,
