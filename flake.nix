@@ -26,15 +26,20 @@
         {
           deploy-rs = {
 
-            deploy-rs = final.rustPlatform.buildRustPackage
-              (darwinOptions // {
-                pname = "deploy-rs";
-                version = "0.1.0";
+            deploy-rs =
+              let
+                cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+                pname = cargoToml.package.name;
+                version = cargoToml.package.version;
+              in
+              final.rustPlatform.buildRustPackage
+                (darwinOptions // {
+                  inherit pname version;
 
-                src = ./.;
+                  src = ./.;
 
-                cargoLock.lockFile = ./Cargo.lock;
-              }) // { meta.description = "A Simple multi-profile Nix-flake deploy tool"; };
+                  cargoLock.lockFile = ./Cargo.lock;
+                }) // { meta.description = "A Simple multi-profile Nix-flake deploy tool"; };
 
             lib = {
               activate = rec {
