@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, HashMap, HashSet},
     fmt::Display,
     process::Command,
 };
@@ -103,7 +103,7 @@ impl Display for Deploy {
 #[derive(Debug)]
 pub struct Node {
     pub hostname: String,
-    pub profiles: HashMap<String, Profile>,
+    pub profiles: BTreeMap<String, Profile>,
     pub profiles_order: Vec<String>,
 }
 
