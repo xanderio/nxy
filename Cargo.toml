@@ -13,7 +13,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0.2", features = ["wrap_help", "derive"] }
 color-eyre = "0.6.2"
-flexi_logger = "0.23.3"
+flexi_logger = { version = "0.23.3", features = ["use_chrono_for_offset"] }
 fork = "0.1"
 futures-util = "0.3.24"
 log = "0.4"
@@ -25,12 +25,12 @@ serde_json = "1.0.85"
 signal-hook = "0.3"
 thiserror = "1.0"
 tokio = { version = "1.21.2", features = [
-        "process",
-        "macros",
-        "sync",
-        "rt-multi-thread",
-        "fs",
-        "time",
+	"process",
+	"macros",
+	"sync",
+	"rt-multi-thread",
+	"fs",
+	"time",
 ] }
 toml = "0.5"
 tracing = "0.1.36"
