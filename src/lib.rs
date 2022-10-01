@@ -250,72 +250,6 @@ pub fn parse_flake(flake: &str) -> Result<DeployFlake, ParseFlakeError> {
     })
 }
 
-#[test]
-fn test_parse_flake() {
-    assert_eq!(
-        parse_flake("../deploy/examples/system").unwrap(),
-        DeployFlake {
-            repo: "../deploy/examples/system",
-            node: None,
-            profile: None,
-        }
-    );
-
-    assert_eq!(
-        parse_flake("../deploy/examples/system#").unwrap(),
-        DeployFlake {
-            repo: "../deploy/examples/system",
-            node: None,
-            profile: None,
-        }
-    );
-
-    assert_eq!(
-        parse_flake("../deploy/examples/system#computer.\"something.nix\"").unwrap(),
-        DeployFlake {
-            repo: "../deploy/examples/system",
-            node: Some("computer".to_string()),
-            profile: Some("something.nix".to_string()),
-        }
-    );
-
-    assert_eq!(
-        parse_flake("../deploy/examples/system#\"example.com\".system").unwrap(),
-        DeployFlake {
-            repo: "../deploy/examples/system",
-            node: Some("example.com".to_string()),
-            profile: Some("system".to_string()),
-        }
-    );
-
-    assert_eq!(
-        parse_flake("../deploy/examples/system#example").unwrap(),
-        DeployFlake {
-            repo: "../deploy/examples/system",
-            node: Some("example".to_string()),
-            profile: None
-        }
-    );
-
-    assert_eq!(
-        parse_flake("../deploy/examples/system#example.system").unwrap(),
-        DeployFlake {
-            repo: "../deploy/examples/system",
-            node: Some("example".to_string()),
-            profile: Some("system".to_string())
-        }
-    );
-
-    assert_eq!(
-        parse_flake("../deploy/examples/system").unwrap(),
-        DeployFlake {
-            repo: "../deploy/examples/system",
-            node: None,
-            profile: None,
-        }
-    );
-}
-
 #[derive(Debug, Clone)]
 pub struct DeployData<'a> {
     pub node_name: &'a str,
@@ -452,5 +386,76 @@ pub fn make_deploy_data<'a, 's>(
         merged_settings,
         debug_logs,
         log_dir,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_flake() {
+        assert_eq!(
+            parse_flake("../deploy/examples/system").unwrap(),
+            DeployFlake {
+                repo: "../deploy/examples/system",
+                node: None,
+                profile: None,
+            }
+        );
+
+        assert_eq!(
+            parse_flake("../deploy/examples/system#").unwrap(),
+            DeployFlake {
+                repo: "../deploy/examples/system",
+                node: None,
+                profile: None,
+            }
+        );
+
+        assert_eq!(
+            parse_flake("../deploy/examples/system#computer.\"something.nix\"").unwrap(),
+            DeployFlake {
+                repo: "../deploy/examples/system",
+                node: Some("computer".to_string()),
+                profile: Some("something.nix".to_string()),
+            }
+        );
+
+        assert_eq!(
+            parse_flake("../deploy/examples/system#\"example.com\".system").unwrap(),
+            DeployFlake {
+                repo: "../deploy/examples/system",
+                node: Some("example.com".to_string()),
+                profile: Some("system".to_string()),
+            }
+        );
+
+        assert_eq!(
+            parse_flake("../deploy/examples/system#example").unwrap(),
+            DeployFlake {
+                repo: "../deploy/examples/system",
+                node: Some("example".to_string()),
+                profile: None
+            }
+        );
+
+        assert_eq!(
+            parse_flake("../deploy/examples/system#example.system").unwrap(),
+            DeployFlake {
+                repo: "../deploy/examples/system",
+                node: Some("example".to_string()),
+                profile: Some("system".to_string())
+            }
+        );
+
+        assert_eq!(
+            parse_flake("../deploy/examples/system").unwrap(),
+            DeployFlake {
+                repo: "../deploy/examples/system",
+                node: None,
+                profile: None,
+            }
+        );
     }
 }
