@@ -12,6 +12,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.0.2", features = ["wrap_help", "derive"] }
+color-eyre = "0.6.2"
 flexi_logger = "0.23.3"
 fork = "0.1"
 futures-util = "0.3.24"
@@ -32,6 +33,8 @@ tokio = { version = "1.21.2", features = [
         "time",
 ] }
 toml = "0.5"
+tracing = "0.1.36"
+tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
 whoami = "1.2.3"
 yn = "0.1"
 

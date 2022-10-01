@@ -153,6 +153,7 @@ pub fn init_logger(
 pub mod cli;
 pub mod data;
 pub mod deploy;
+pub mod profile;
 pub mod push;
 
 #[derive(Debug)]
