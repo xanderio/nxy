@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use color_eyre::Result;
+use tracing::instrument;
 
 #[derive(Debug, Clone, Parser)]
 struct Opts {
@@ -18,9 +19,10 @@ pub enum Action {
     },
 }
 
+#[instrument]
 fn main() -> Result<()> {
+    install_tracing();
     color_eyre::install()?;
-    tracing_subscriber::fmt().pretty().init();
 
     let opts = Opts::parse();
     match opts.action {
@@ -30,9 +32,27 @@ fn main() -> Result<()> {
     Ok(())
 }
 
+#[instrument]
 fn list_profiles(flake: &str) -> Result<()> {
     let deploy = deploy::profile::load_deployment_metadata(&[flake])?;
 
     print!("{deploy}");
     Ok(())
+}
+
+fn install_tracing() {
+    use tracing_error::ErrorLayer;
+    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    let fmt_layer = fmt::layer().with_target(false);
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(ErrorLayer::default())
+        .init();
 }
