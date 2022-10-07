@@ -24,9 +24,23 @@
           };
         in
         {
-          deploy-rs = {
+          deploy-rs = rec {
 
-            deploy-rs =
+            deploy-rs = final.runCommand "deploy-rs-wrapper"
+              {
+                buildInputs = [ final.makeWrapper ];
+              }
+              ''
+                mkdir $out
+                ln -s ${deploy-rs-unwrapped}/* $out
+                rm $out/bin
+                mkdir $out/bin
+                ln -s ${deploy-rs-unwrapped}/bin/* $out/bin
+                rm $out/bin/nxy
+                makeWrapper ${deploy-rs-unwrapped}/bin/nxy $out/bin/nxy \
+                  --set NIXPKGS_REV ${self.inputs.nixpkgs.rev}
+              '';
+            deploy-rs-unwrapped =
               let
                 cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
                 pname = cargoToml.package.name;
@@ -37,6 +51,9 @@
                   inherit pname version;
 
                   src = ./.;
+                  # disabled for now as this would add a dependency to `self.inputs.nixpkgs.rev`
+                  # which whould case a complet rebuild everytime nixpkgs is changed.
+                  doCheck = false;
 
                   cargoLock.lockFile = ./Cargo.lock;
                 }) // { meta.description = "A Simple multi-profile Nix-flake deploy tool"; };
@@ -160,6 +177,7 @@
         devShells.default = pkgs.mkShell {
           inputsFrom = [ self.packages.${system}.deploy-rs ];
           RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+          NIXPKGS_REV = self.inputs.nixpkgs.rev;
           buildInputs = with pkgs; [
             nixUnstable
             cargo

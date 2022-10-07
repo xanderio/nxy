@@ -182,13 +182,18 @@ struct NixData {
 
 /// Use in evalutation of nodes and profiles without building the profiles,
 /// this is only done on a best effort basis by removing the path attr.
-const NIX_NODES_WITHOUT_BUILD: &str = r#"
-deploy: deploy // { 
+fn nix_nodes_without_build() -> String {
+    let nixpkgs_rev = std::env::var("NIXPKGS_REV").expect("NIXPKGS_REV not set");
+    format!(
+        r#"
+deploy: deploy // {{ 
    nodes = let 
-        nixpkgs = builtins.getFlake "github:nix/nixpkgs/7e52b35fe98481a279d89f9c145f8076d049d2b9";
+        lib = (builtins.getFlake "github:nixos/nixpkgs/{nixpkgs_rev}" ).lib;
     in 
-    nixpkgs.lib.attrsets.filterAttrsRecursive (n: v: n != "path") deploy.nodes;
-}"#;
+    lib.attrsets.filterAttrsRecursive (n: v: n != "path") deploy.nodes;
+}}"#
+    )
+}
 
 #[instrument]
 pub fn load_deployment_metadata(flakes: &[&str]) -> Result<Deploy> {
@@ -204,7 +209,7 @@ pub fn load_deployment_metadata(flakes: &[&str]) -> Result<Deploy> {
         .collect::<HashSet<_>>()
     {
         // get all profiles _without_ building them
-        let nix_data: NixData = nix_eval(&format!("{flake}#deploy"), NIX_NODES_WITHOUT_BUILD)?;
+        let nix_data: NixData = nix_eval(&format!("{flake}#deploy"), &nix_nodes_without_build())?;
         tracing::trace!(?nix_data);
         deploy
             .nodes
