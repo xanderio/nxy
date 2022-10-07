@@ -218,14 +218,16 @@ pub fn load_deployment_metadata(flakes: &[&str]) -> Result<Deploy> {
     Ok(deploy)
 }
 
-#[instrument]
+#[instrument(skip(apply))]
 fn nix_eval<T: DeserializeOwned>(flake: &str, apply: &str) -> Result<T> {
     let output = Command::new("nix")
         .args(&["eval", "--json", flake, "--apply", apply])
         .output()?;
 
     if !output.status.success() {
+        tracing::debug!(stdout = ?String::from_utf8(output.stdout));
         tracing::debug!(stderr = ?String::from_utf8(output.stderr));
+        tracing::debug!("nix eval failed");
         bail!("nix eval failed");
     }
 
