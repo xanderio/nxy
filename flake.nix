@@ -174,20 +174,45 @@
           default = deploy-rs;
         };
 
-        devShells.default = pkgs.mkShell {
-          inputsFrom = [ self.packages.${system}.deploy-rs ];
-          RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-          NIXPKGS_REV = self.inputs.nixpkgs.rev;
-          buildInputs = with pkgs; [
-            nixUnstable
-            cargo
-            rustc
-            rustfmt
-            clippy
-            reuse
-            rust.packages.stable.rustPlatform.rustLibSrc
-          ];
-        };
+        devShells.default =
+          let
+            xdg_runtime_dir =
+              if builtins.getEnv "XDG_RUNTIME_DIR" == "" then
+                builtins.abort "devShell requires --impure and $XDG_RUNTIME_DIR being set"
+              else
+                builtins.getEnv "XDG_RUNTIME_DIR";
+          in
+          pkgs.mkShell {
+            inputsFrom = [ self.packages.${system}.deploy-rs ];
+            RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+            NIXPKGS_REV = self.inputs.nixpkgs.rev;
+            PGDATA = ".pg/data";
+            PGHOST = "${xdg_runtime_dir}/nxy";
+            PGDATABASE = "nxy";
+            buildInputs = with pkgs; [
+              nixUnstable
+              cargo
+              rustc
+              rustfmt
+              clippy
+              reuse
+              rust.packages.stable.rustPlatform.rustLibSrc
+              postgresql_14
+            ];
+            shellHook = ''
+              mkdir -p $XDG_RUNTIME_DIR/nxy
+              if ! [ -d $PGDATA ]; then 
+                initdb
+              fi
+              if ! pg_ctl status > /dev/null; then
+                systemd-run --user --unit=nxy_postgres --service-type=notify \
+                  --same-dir -E PGDATA=$PGDATA \
+                  ${pkgs.postgresql_14}/bin/postgres --listen-addresses="" --unix_socket_directories=${xdg_runtime_dir}/nxy
+
+                  createdb
+              fi
+            '';
+          };
 
         checks = {
           deploy-rs = self.packages.${system}.default.overrideAttrs (super: { doCheck = true; });
