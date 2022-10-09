@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
-use color_eyre::Result;
+use color_eyre::{eyre::Context, Result};
+use sqlx::postgres::PgPoolOptions;
 use tracing::instrument;
 
 mod profile;
@@ -21,10 +22,15 @@ pub enum Action {
     },
 }
 
+#[tokio::main]
 #[instrument]
-fn main() -> Result<()> {
+async fn main() -> Result<()> {
     install_tracing();
     color_eyre::install()?;
+
+    let database_url = std::env::var("DATABASE_URL").wrap_err("DATABASE_URL unset")?;
+    let pool = PgPoolOptions::new().connect(&database_url).await?;
+    sqlx::migrate!().run(&pool).await?;
 
     let opts = Opts::parse();
     match opts.action {

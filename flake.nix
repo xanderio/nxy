@@ -175,6 +175,7 @@
             PGDATA = ".pg/data";
             PGHOST = "${xdg_runtime_dir}/nxy";
             PGDATABASE = "nxy";
+            DATABASE_URL = "postgres://";
             buildInputs = with pkgs; [
               nixUnstable
               cargo
@@ -184,6 +185,7 @@
               reuse
               rust.packages.stable.rustPlatform.rustLibSrc
               postgresql_14
+              sqlx-cli
             ];
             shellHook = ''
               mkdir -p $XDG_RUNTIME_DIR/nxy
