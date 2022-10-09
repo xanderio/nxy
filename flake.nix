@@ -24,25 +24,10 @@
           };
         in
         {
-          deploy-rs = rec {
-
-            deploy-rs = final.runCommand "deploy-rs-wrapper"
-              {
-                buildInputs = [ final.makeWrapper ];
-              }
-              ''
-                mkdir $out
-                ln -s ${deploy-rs-unwrapped}/* $out
-                rm $out/bin
-                mkdir $out/bin
-                ln -s ${deploy-rs-unwrapped}/bin/* $out/bin
-                rm $out/bin/nxy
-                makeWrapper ${deploy-rs-unwrapped}/bin/nxy $out/bin/nxy \
-                  --set NIXPKGS_REV ${self.inputs.nixpkgs.rev}
-              '';
-            deploy-rs-unwrapped =
+          deploy-rs = {
+            deploy-rs =
               let
-                cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+                cargoToml = builtins.fromTOML (builtins.readFile ./crates/deploy/Cargo.toml);
                 pname = cargoToml.package.name;
                 version = cargoToml.package.version;
               in
@@ -51,6 +36,7 @@
                   inherit pname version;
 
                   src = ./.;
+                  cargoBuildFlags = "-p deploy";
                   # disabled for now as this would add a dependency to `self.inputs.nixpkgs.rev`
                   # which whould case a complet rebuild everytime nixpkgs is changed.
                   doCheck = false;
@@ -121,7 +107,7 @@
                     deploy-json = final.writeText "deploy.json" (builtins.toJSON deploy);
                   in
                   final.runCommand "jsonschema-deploy-system" { } ''
-                    ${final.python3.pkgs.jsonschema}/bin/jsonschema -i ${deploy-json} ${./interface.json} && touch $out
+                    ${final.python3.pkgs.jsonschema}/bin/jsonschema -i ${deploy-json} ${./crates/deploy/interface.json} && touch $out
                   '';
 
                 activate = deploy:

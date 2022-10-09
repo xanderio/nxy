@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 use color_eyre::Result;
 use tracing::instrument;
 
+mod profile;
+
 #[derive(Debug, Clone, Parser)]
 struct Opts {
     #[command(subcommand)]
@@ -34,7 +36,7 @@ fn main() -> Result<()> {
 
 #[instrument]
 fn list_profiles(flake: &str) -> Result<()> {
-    let deploy = deploy::profile::load_deployment_metadata(&[flake])?;
+    let deploy = crate::profile::load_deployment_metadata(&[flake])?;
 
     print!("{deploy}");
     Ok(())

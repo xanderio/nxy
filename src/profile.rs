@@ -9,7 +9,7 @@ use merge::Merge;
 use serde::{de::DeserializeOwned, Deserialize};
 use tracing::instrument;
 
-use crate::{parse_flake, DeployFlake, ParseFlakeError};
+use deploy::{parse_flake, DeployFlake, ParseFlakeError};
 
 #[derive(Debug, Default)]
 pub struct Deploy {
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn display_system() {
-        let deploy = load_deployment_metadata(&["./examples/system"]).unwrap();
+        let deploy = load_deployment_metadata(&["./crates/deploy/examples/system"]).unwrap();
 
         let expected = r#"node: example
 hostname: localhost
@@ -263,7 +263,7 @@ profiles:
 
     #[test]
     fn display_simple() {
-        let deploy = load_deployment_metadata(&["./examples/simple"]).unwrap();
+        let deploy = load_deployment_metadata(&["./crates/deploy/examples/simple"]).unwrap();
 
         let expected = r#"node: example
 hostname: localhost
