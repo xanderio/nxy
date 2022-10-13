@@ -1,8 +1,10 @@
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::Context, Result};
-use sqlx::postgres::PgPoolOptions;
+use flake::InputFlakeStore;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing::instrument;
 
+mod flake;
 mod profile;
 
 #[derive(Debug, Clone, Parser)]
@@ -20,6 +22,9 @@ pub enum Action {
         #[arg(group = "deploy", default_value = ".")]
         target: String,
     },
+    AddFlake {
+        repo_url: String,
+    },
 }
 
 #[tokio::main]
@@ -35,8 +40,15 @@ async fn main() -> Result<()> {
     let opts = Opts::parse();
     match opts.action {
         Action::List { target } => list_profiles(&target)?,
+        Action::AddFlake { repo_url } => add_flake(repo_url, pool).await?,
     };
 
+    Ok(())
+}
+
+async fn add_flake(repo_url: String, pool: PgPool) -> Result<()> {
+    let store = InputFlakeStore::new(pool);
+    store.get_or_add(repo_url).await?;
     Ok(())
 }
 
