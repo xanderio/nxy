@@ -34,7 +34,15 @@ sqlx = { version = "0.6.2", features = [
         "offline",
         "macros",
         "migrate",
+        "json",
+        "chrono",
 ] }
+chrono = { version = "0.4.22", features = ["serde"] }
+futures-util = "0.3.24"
+axum = { version = "0.5.16", features = ["ws", "headers"] }
+hyper = { version = "0.14.20", features = ["full"] }
+tower = "0.4.13"
+tower-http = { version = "0.3.4", features = ["trace"] }
 
 [profile.release]
 lto = true

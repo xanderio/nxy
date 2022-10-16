@@ -1,11 +1,16 @@
+use axum::{Extension, Router};
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::Context, Result};
 use flake::InputFlakeStore;
+use futures_util::stream::TryStreamExt;
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
 mod flake;
 mod profile;
+pub mod server;
+mod rpc;
 
 #[derive(Debug, Clone, Parser)]
 struct Opts {
@@ -16,15 +21,13 @@ struct Opts {
 #[derive(Debug, Clone, Subcommand)]
 #[command()]
 pub enum Action {
-    /// Print all nodes and profiles
-    List {
-        /// The flake to deploy
-        #[arg(group = "deploy", default_value = ".")]
-        target: String,
-    },
+    /// Print all input flakes
+    List,
     AddFlake {
         repo_url: String,
     },
+    Check,
+    Server,
 }
 
 #[tokio::main]
@@ -39,25 +42,50 @@ async fn main() -> Result<()> {
 
     let opts = Opts::parse();
     match opts.action {
-        Action::List { target } => list_profiles(&target)?,
+        Action::List => list_input_flakes(pool).await?,
+        Action::Check => check_for_updates(pool).await?,
+        Action::Server => run_server(pool).await?,
         Action::AddFlake { repo_url } => add_flake(repo_url, pool).await?,
     };
 
     Ok(())
 }
 
-async fn add_flake(repo_url: String, pool: PgPool) -> Result<()> {
+async fn add_flake(flake_url: String, pool: PgPool) -> Result<()> {
     let store = InputFlakeStore::new(pool);
-    store.get_or_add(repo_url).await?;
+    store.get_or_add(flake_url).await?;
     Ok(())
 }
 
-#[instrument]
-fn list_profiles(flake: &str) -> Result<()> {
-    let deploy = crate::profile::load_deployment_metadata(&[flake])?;
+#[instrument(skip(pool))]
+async fn list_input_flakes(pool: PgPool) -> Result<()> {
+    let store = InputFlakeStore::new(pool);
+    while let Some(flake) = store.stream().await.try_next().await? {
+        println!("{}", flake.flake_url);
+    }
 
-    print!("{deploy}");
     Ok(())
+}
+
+#[instrument(skip(pool))]
+async fn check_for_updates(pool: PgPool) -> Result<()> {
+    let store = InputFlakeStore::new(pool);
+    while let Some(flake) = store.stream().await.try_next().await? {
+        flake.update().await?;
+    }
+    Ok(())
+}
+
+async fn run_server(pool: PgPool) -> Result<()> {
+    let app = Router::new()
+        .layer(TraceLayer::new_for_http())
+        .layer(Extension(pool))
+        .nest("/", server::router());
+
+    axum::Server::bind(&"0.0.0.0:8080".parse()?)
+        .serve(app.into_make_service())
+        .await
+        .map_err(Into::into)
 }
 
 fn install_tracing() {
@@ -65,7 +93,7 @@ fn install_tracing() {
     use tracing_subscriber::prelude::*;
     use tracing_subscriber::{fmt, EnvFilter};
 
-    let fmt_layer = fmt::layer().with_target(false);
+    let fmt_layer = fmt::layer().pretty();
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();

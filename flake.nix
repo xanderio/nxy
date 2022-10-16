@@ -186,6 +186,7 @@
               rust.packages.stable.rustPlatform.rustLibSrc
               postgresql_14
               sqlx-cli
+              websocat
             ];
             shellHook = ''
               mkdir -p $XDG_RUNTIME_DIR/nxy
