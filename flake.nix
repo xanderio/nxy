@@ -141,6 +141,9 @@
             };
           };
         };
+      herculesCI = {
+        ciSystems = [ "x86_64-linux" ];
+      };
     } //
     utils.lib.eachDefaultSystem (system:
       let
