@@ -167,7 +167,7 @@
           let
             xdg_runtime_dir =
               if builtins.getEnv "XDG_RUNTIME_DIR" == "" then
-                builtins.abort "devShell requires --impure and $XDG_RUNTIME_DIR being set"
+                ".pg"
               else
                 builtins.getEnv "XDG_RUNTIME_DIR";
           in
