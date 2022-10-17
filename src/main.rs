@@ -8,7 +8,6 @@ use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
 mod flake;
-mod profile;
 pub mod server;
 mod rpc;
 
