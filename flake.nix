@@ -8,14 +8,16 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    naersk.url = "github:nix-community/naersk";
     utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, utils, ... }:
+  outputs = { self, nixpkgs, naersk, utils, ... }:
     {
       overlay = final: prev:
         let
           system = final.stdenv.hostPlatform.system;
+          naersk' = final.callPackage naersk { };
           darwinOptions = final.lib.optionalAttrs final.stdenv.isDarwin {
             buildInputs = with final.darwin.apple_sdk.frameworks; [
               SystemConfiguration
@@ -31,17 +33,13 @@
                 pname = cargoToml.package.name;
                 version = cargoToml.package.version;
               in
-              final.rustPlatform.buildRustPackage
+              naersk'.buildPackage
                 (darwinOptions // {
                   inherit pname version;
 
                   src = ./.;
-                  cargoBuildFlags = "-p deploy";
-                  # disabled for now as this would add a dependency to `self.inputs.nixpkgs.rev`
-                  # which whould case a complet rebuild everytime nixpkgs is changed.
-                  doCheck = false;
+                  cargoBuildOptions = x: x ++ [ "-p deploy" ];
 
-                  cargoLock.lockFile = ./Cargo.lock;
                 }) // { meta.description = "A Simple multi-profile Nix-flake deploy tool"; };
 
             lib = import ./lib { inherit self final system; };
