@@ -1,0 +1,193 @@
+{
+  "db": "PostgreSQL",
+  "04bfb4860007708ddf561a30fc60742d4b3c4f2aa500132b4bb89fbd3b5c459b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "input_flake_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "flake_url",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "path",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "revision",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "last_modified",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "url",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "locks",
+          "ordinal": 7,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Timestamptz",
+          "Text",
+          "Jsonb"
+        ]
+      }
+    },
+    "query": "insert into input_flakes \n                (flake_url, description, path, revision, last_modified, url, locks) values \n                ($1, $2, $3, $4, $5, $6, $7)\n                returning *"
+  },
+  "2b3f24bc92c9ce26555cc6574bcaebdc419f80a5d9963c5ee756bbf29f935567": {
+    "describe": {
+      "columns": [
+        {
+          "name": "input_flake_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "flake_url",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "path",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "revision",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "last_modified",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "url",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "locks",
+          "ordinal": 7,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "select * from input_flakes where flake_url = $1"
+  },
+  "9ff57d4e5544ba72dcd6b131b697df9b269ada3205906e2e809ca061fe3cad04": {
+    "describe": {
+      "columns": [
+        {
+          "name": "input_flake_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "flake_url",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "path",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "revision",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "last_modified",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "url",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "locks",
+          "ordinal": 7,
+          "type_info": "Jsonb"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "select * from input_flakes"
+  }
+}
