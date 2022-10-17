@@ -80,7 +80,6 @@
           pkgs.mkShell {
             inputsFrom = [ self.packages.${system}.deploy-rs ];
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
-            NIXPKGS_REV = self.inputs.nixpkgs.rev;
             PGDATA = ".pg/data";
             PGHOST = "${xdg_runtime_dir}/nxy";
             PGDATABASE = "nxy";
