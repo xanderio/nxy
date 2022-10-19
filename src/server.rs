@@ -39,17 +39,23 @@ async fn handle_socket(socket: WebSocket) {
 
     while let Some(msg) = rx.recv().await {
         tracing::info!(?msg, "receiver message");
-        if let JsonRPC::Request(req) = msg {
-            let rpc: JsonRPC = rpc::Response::new_ok(req.id, "Hello, World!").into();
-            sink.send(Message::Text(rpc.to_string())).await.unwrap();
-        } else if let JsonRPC::Response(_) = msg {
-            sink.send(Message::Text(msg.to_string())).await.unwrap();
+        match msg {
+            JsonRPC::Request(req) => {
+                tracing::warn!(?req, "server received request, this should happen");
+            }
+            JsonRPC::Response(res) => {
+                tracing::info!("{res:?}");
+            }
+            JsonRPC::Notification(_) => {
+                let rpc: JsonRPC = rpc::Request::new(1.into(), "ping".to_string(), ()).into();
+                sink.send(Message::Text(rpc.to_string())).await.unwrap();
+            }
         }
     }
     receiver.await.unwrap().unwrap();
 }
 
-#[instrument]
+#[instrument(skip(stream, tx))]
 async fn process(mut stream: SplitStream<WebSocket>, tx: Sender<JsonRPC>) -> Result<()> {
     while let Some(msg) = stream.next().await {
         if let Ok(msg) = msg {
