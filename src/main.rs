@@ -18,7 +18,7 @@ struct Opts {
     action: Action,
 }
 
-#[derive(Debug, Clone, Subcommand)]
+#[derive(Debug, Clone, Subcommand, PartialEq, Eq)]
 #[command()]
 pub enum Action {
     /// Print all input flakes
@@ -37,16 +37,20 @@ async fn main() -> Result<()> {
     install_tracing();
     color_eyre::install()?;
 
+    let opts = Opts::parse();
+    if opts.action == Action::Agent {
+        return run_agent().await;
+    }
+
     let database_url = std::env::var("DATABASE_URL").wrap_err("DATABASE_URL unset")?;
     let pool = PgPoolOptions::new().connect(&database_url).await?;
     sqlx::migrate!().run(&pool).await?;
 
-    let opts = Opts::parse();
     match opts.action {
         Action::List => list_input_flakes(pool).await?,
         Action::Check => check_for_updates(pool).await?,
         Action::Server => run_server(pool).await?,
-        Action::Agent => run_agent().await?,
+        Action::Agent => unreachable!(),
         Action::AddFlake { repo_url } => add_flake(repo_url, pool).await?,
     };
 
