@@ -7,9 +7,10 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
+mod agent;
 mod flake;
-pub mod server;
 mod rpc;
+mod server;
 
 #[derive(Debug, Clone, Parser)]
 struct Opts {
@@ -27,6 +28,7 @@ pub enum Action {
     },
     Check,
     Server,
+    Agent,
 }
 
 #[tokio::main]
@@ -44,6 +46,7 @@ async fn main() -> Result<()> {
         Action::List => list_input_flakes(pool).await?,
         Action::Check => check_for_updates(pool).await?,
         Action::Server => run_server(pool).await?,
+        Action::Agent => run_agent().await?,
         Action::AddFlake { repo_url } => add_flake(repo_url, pool).await?,
     };
 
@@ -72,6 +75,11 @@ async fn check_for_updates(pool: PgPool) -> Result<()> {
     while let Some(flake) = store.stream().await.try_next().await? {
         flake.update().await?;
     }
+    Ok(())
+}
+
+async fn run_agent() -> Result<()> {
+    agent::run().await?;
     Ok(())
 }
 

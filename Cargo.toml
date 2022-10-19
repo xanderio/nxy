@@ -43,6 +43,7 @@ axum = { version = "0.5.16", features = ["ws", "headers"] }
 hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["trace"] }
+tokio-tungstenite = "0.17.2"
 
 [profile.release]
 lto = true
