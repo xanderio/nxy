@@ -1,0 +1,58 @@
+use color_eyre::Result;
+use futures_util::{SinkExt, TryStreamExt};
+use tokio_tungstenite::{connect_async, tungstenite::Message};
+use tracing::instrument;
+
+use rpc::{JsonRPC, Request, Response};
+
+mod handler;
+
+#[tokio::main]
+#[instrument]
+async fn main() -> Result<()> {
+    install_tracing();
+    color_eyre::install()?;
+
+    run().await
+}
+
+async fn run() -> Result<()> {
+    let (mut ws, _) = connect_async("ws://localhost:8080/ws").await?;
+
+    while let Some(msg) = ws.try_next().await? {
+        let rpc: JsonRPC = msg.into_text()?.parse()?;
+        match rpc {
+            JsonRPC::Request(request) => {
+                let res: JsonRPC = handle_request(request).await?.into();
+                ws.send(Message::Text(res.to_string())).await?;
+            }
+            JsonRPC::Response(res) => tracing::warn!(?res, "received response, this should happen"),
+            JsonRPC::Notification(notification) => tracing::info!(?notification),
+        }
+    }
+    Ok(())
+}
+
+async fn handle_request(request: Request) -> Result<Response> {
+    match request.method.as_str() {
+        "ping" => handler::ping(&request),
+        _ => handler::unknown(&request),
+    }
+}
+
+fn install_tracing() {
+    use tracing_error::ErrorLayer;
+    use tracing_subscriber::prelude::*;
+    use tracing_subscriber::{fmt, EnvFilter};
+
+    let fmt_layer = fmt::layer().pretty();
+    let filter_layer = EnvFilter::try_from_default_env()
+        .or_else(|_| EnvFilter::try_new("info"))
+        .unwrap();
+
+    tracing_subscriber::registry()
+        .with(filter_layer)
+        .with(fmt_layer)
+        .with(ErrorLayer::default())
+        .init();
+}

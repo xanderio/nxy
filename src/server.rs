@@ -22,7 +22,7 @@ use serde::Serialize;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{instrument, Level};
 
-use crate::rpc::{ErrorCode, JsonRPC, Request, RequestId, Response};
+use rpc::{ErrorCode, JsonRPC, Request, RequestId, Response};
 
 pub fn router() -> Router {
     Router::new().route("/ws", get(ws_handler))

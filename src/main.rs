@@ -7,9 +7,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
-mod agent;
 mod flake;
-mod rpc;
 mod server;
 
 #[derive(Debug, Clone, Parser)]
@@ -28,7 +26,6 @@ pub enum Action {
     },
     Check,
     Server,
-    Agent,
 }
 
 #[tokio::main]
@@ -38,9 +35,6 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let opts = Opts::parse();
-    if opts.action == Action::Agent {
-        return run_agent().await;
-    }
 
     let database_url = std::env::var("DATABASE_URL").wrap_err("DATABASE_URL unset")?;
     let pool = PgPoolOptions::new().connect(&database_url).await?;
@@ -50,7 +44,6 @@ async fn main() -> Result<()> {
         Action::List => list_input_flakes(pool).await?,
         Action::Check => check_for_updates(pool).await?,
         Action::Server => run_server(pool).await?,
-        Action::Agent => unreachable!(),
         Action::AddFlake { repo_url } => add_flake(repo_url, pool).await?,
     };
 
@@ -79,11 +72,6 @@ async fn check_for_updates(pool: PgPool) -> Result<()> {
     while let Some(flake) = store.stream().await.try_next().await? {
         flake.update().await?;
     }
-    Ok(())
-}
-
-async fn run_agent() -> Result<()> {
-    agent::run().await?;
     Ok(())
 }
 

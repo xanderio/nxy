@@ -38,7 +38,7 @@
                   inherit pname version;
 
                   src = ./.;
-                  cargoBuildOptions = x: x ++ [ "-p deploy" ];
+                  cargoBuildOptions = x: x ++ [ "--package deploy" ];
 
                 }) // { meta.description = "A Simple multi-profile Nix-flake deploy tool"; };
 
@@ -67,6 +67,17 @@
               inherit pname version;
               src = ./.;
             };
+          nxy-agent =
+            let
+              cargoToml = builtins.fromTOML (builtins.readFile ./crates/agent/Cargo.toml);
+              pname = cargoToml.package.name;
+              version = cargoToml.package.version;
+            in
+            naersk'.buildPackage {
+              inherit pname version;
+              src = ./.;
+              cargoBuildOptions = x: x ++ [ "--package agent" ];
+            };
           default = nxy;
         };
 
@@ -78,6 +89,10 @@
           nxy = {
             type = "app";
             program = "${self.packages."${system}".nxy}/bin/nxy";
+          };
+          nxy-agent = {
+            type = "app";
+            program = "${self.packages."${system}".nxy-agent}/bin/agent";
           };
           default = nxy;
         };
