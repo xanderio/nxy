@@ -14,7 +14,7 @@
 
   outputs = { self, nixpkgs, naersk, utils, ... }:
     {
-      overlay = final: prev:
+      overlays.default = final: prev:
         let
           system = final.stdenv.hostPlatform.system;
           naersk' = final.callPackage naersk { };
@@ -51,7 +51,7 @@
     } //
     utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; overlays = [ self.overlay ]; };
+        pkgs = import nixpkgs { inherit system; overlays = [ self.overlays.default ]; };
         naersk' = pkgs.callPackage naersk { };
       in
       {
