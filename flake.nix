@@ -52,19 +52,34 @@
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; overlays = [ self.overlay ]; };
+        naersk' = pkgs.callPackage naersk { };
       in
       {
         packages = rec {
           deploy-rs = pkgs.deploy-rs.deploy-rs;
-          default = deploy-rs;
+          nxy =
+            let
+              cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
+              pname = cargoToml.package.name;
+              version = cargoToml.package.version;
+            in
+            naersk'.buildPackage {
+              inherit pname version;
+              src = ./.;
+            };
+          default = nxy;
         };
 
         apps = rec {
           deploy-rs = {
             type = "app";
-            program = "${self.packages."${system}".default}/bin/deploy";
+            program = "${self.packages."${system}".deploy-rs}/bin/deploy";
           };
-          default = deploy-rs;
+          nxy = {
+            type = "app";
+            program = "${self.packages."${system}".nxy}/bin/nxy";
+          };
+          default = nxy;
         };
 
         devShells.default =
