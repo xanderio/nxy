@@ -112,9 +112,13 @@ impl Display for JsonRPC {
 }
 
 impl Request {
-    pub fn new<P: Serialize>(id: RequestId, method: String, params: P) -> Request {
+    pub fn new<S: AsRef<str>, P: Serialize>(id: RequestId, method: S, params: P) -> Request {
         let params = serde_json::to_value(params).unwrap();
-        Request { id, method, params }
+        Request {
+            id,
+            method: method.as_ref().to_string(),
+            params,
+        }
     }
 }
 
@@ -140,6 +144,7 @@ impl Response {
     }
 }
 impl Notification {
+    #[allow(unused)]
     pub fn new(method: String, params: impl Serialize) -> Notification {
         Notification {
             method,

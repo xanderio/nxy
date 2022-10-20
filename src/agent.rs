@@ -2,12 +2,10 @@ use color_eyre::Result;
 use futures_util::{SinkExt, TryStreamExt};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 
-use crate::rpc::{JsonRPC, Notification, Request, Response};
+use crate::rpc::{JsonRPC, Request, Response};
 
 pub async fn run() -> Result<()> {
     let (mut ws, _) = connect_async("ws://localhost:8080/ws").await?;
-    let req: JsonRPC = Notification::new("hello".to_string(), ()).into();
-    ws.send(Message::Text(req.to_string())).await?;
 
     while let Some(msg) = ws.try_next().await? {
         let rpc: JsonRPC = msg.into_text()?.parse()?;
