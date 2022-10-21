@@ -10,7 +10,7 @@ use axum::{
     routing::get,
     Router, TypedHeader,
 };
-use color_eyre::Result;
+use color_eyre::Report;
 use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
@@ -56,7 +56,7 @@ async fn handle_socket(socket: WebSocket, agent_manager: Arc<AgentManager>) {
     let agent = Agent::new(inbox, outbox);
     agent_manager.add_agent(agent).await.unwrap();
 
-    inbox_handler.await.unwrap().unwrap();
+    inbox_handler.await.unwrap();
     outbox_handler.await.unwrap();
 }
 
@@ -74,31 +74,34 @@ async fn process_outbox(
 }
 
 #[instrument(skip_all)]
-async fn process_inbox(
-    mut stream: SplitStream<WebSocket>,
-    tx: mpsc::Sender<JsonRPC>,
-) -> Result<()> {
+async fn process_inbox(mut stream: SplitStream<WebSocket>, tx: mpsc::Sender<JsonRPC>) {
     while let Some(msg) = stream.next().await {
         if let Ok(msg) = msg {
             match msg {
                 Message::Text(t) => {
                     tracing::debug!("client sent str: {:?}", t);
-                    match t.parse() {
-                        Ok(rpc) => tx.send(rpc).await?,
+                    let msg = match t.parse() {
+                        Ok(rpc) => rpc,
                         Err(err) => {
-                            tx.send(
-                                Response::new_err(
-                                    // we don't have a request id in this case, the standard allow
-                                    // that the request id is empty in this case, but our
-                                    // implementation doesn't support this.
-                                    u64::MAX.into(),
-                                    ErrorCode::ParseError as i32,
-                                    err.to_string(),
-                                )
-                                .into(),
+                            // compiler needs a little help with the type signature
+                            let err: Report = err;
+                            Response::new_err(
+                                // we don't have a request id in this case, the standard allow
+                                // that the request id is empty in this case, but our
+                                // implementation doesn't support this.
+                                u64::MAX.into(),
+                                ErrorCode::ParseError as i32,
+                                err.to_string(),
                             )
-                            .await?
+                            .into()
                         }
+                    };
+                    if let Err(err) = tx.send(msg).await {
+                        tracing::warn!(
+                            ?err,
+                            "error sending incomming msg to agent, closing connection"
+                        );
+                        break;
                     };
                 }
                 Message::Binary(_) => {
@@ -119,5 +122,4 @@ async fn process_inbox(
             break;
         }
     }
-    Ok(())
 }
