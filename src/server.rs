@@ -88,7 +88,10 @@ async fn process_inbox(
                         Err(err) => {
                             tx.send(
                                 Response::new_err(
-                                    0.into(),
+                                    // we don't have a request id in this case, the standard allow
+                                    // that the request id is empty in this case, but our
+                                    // implementation doesn't support this.
+                                    u64::MAX.into(),
                                     ErrorCode::ParseError as i32,
                                     err.to_string(),
                                 )
