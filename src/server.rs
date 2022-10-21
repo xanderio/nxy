@@ -66,7 +66,10 @@ async fn process_outbox(
     mut outbox_receiver: mpsc::Receiver<JsonRPC>,
 ) {
     while let Some(msg) = outbox_receiver.recv().await {
-        sink.send(Message::Text(msg.to_string())).await.unwrap();
+        if let Err(err) = sink.send(Message::Text(msg.to_string())).await {
+            tracing::warn!(?err, "connection closed");
+            return;
+        };
     }
 }
 
