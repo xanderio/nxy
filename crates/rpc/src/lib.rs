@@ -1,3 +1,5 @@
+pub mod types;
+
 use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
@@ -31,6 +33,12 @@ impl From<Notification> for JsonRPC {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(transparent)]
 pub struct RequestId(u64);
+
+impl Display for RequestId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Request {

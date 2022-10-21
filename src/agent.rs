@@ -3,8 +3,8 @@ use std::{
     sync::{atomic::AtomicU64, Arc, Mutex},
 };
 
-use color_eyre::Result;
-use rpc::{JsonRPC, Request, RequestId, Response};
+use color_eyre::{eyre::eyre, Result};
+use rpc::{types::Status, JsonRPC, Request, RequestId, Response};
 use serde::Serialize;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{instrument, Level};
@@ -92,9 +92,20 @@ impl Agent {
     pub async fn ping(&self) -> Result<()> {
         let res = self.send_request("ping", ()).await.await?;
         if let Some(error) = res.error {
-            Err(color_eyre::eyre::eyre!("request error: {:?}", error))
+            Err(eyre!("request error: {:?}", error))
         } else {
             Ok(())
+        }
+    }
+
+    pub async fn status(&self) -> Result<Status> {
+        let res = self.send_request("status", ()).await.await?;
+        if let Some(error) = res.error {
+            Err(eyre!("request error: {:?}", error))
+        } else {
+            res.result
+                .ok_or_else(|| eyre!("status result is empty"))
+                .and_then(|v| serde_json::from_value(v).map_err(Into::into))
         }
     }
 }

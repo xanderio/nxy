@@ -24,6 +24,7 @@ dependencies = [
  "color-eyre",
  "futures-util",
  "rpc",
+ "serde_json",
  "tokio",
  "tokio-tungstenite",
  "tracing",

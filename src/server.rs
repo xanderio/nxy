@@ -46,6 +46,8 @@ async fn handle_socket(socket: WebSocket) {
 
     let agent = Agent::new(inbox, outbox);
     agent.ping().await.unwrap();
+    let status = agent.status().await.unwrap();
+    tracing::info!(?status);
 
     inbox_handler.await.unwrap().unwrap();
     outbox_handler.await.unwrap();
