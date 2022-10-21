@@ -1,50 +1,100 @@
+use std::{
+    collections::HashMap,
+    sync::{atomic::AtomicU64, Arc, Mutex},
+};
+
 use color_eyre::Result;
-use futures_util::{SinkExt, TryStreamExt};
-use tokio_tungstenite::{connect_async, tungstenite::Message};
+use rpc::{JsonRPC, Request, RequestId, Response};
+use serde::Serialize;
+use tokio::sync::{mpsc, oneshot};
+use tracing::{instrument, Level};
 
-use crate::rpc::{JsonRPC, Request, Response};
+#[derive(Debug, Clone)]
+pub struct Agent(Arc<AgentInner>);
 
-pub async fn run() -> Result<()> {
-    let (mut ws, _) = connect_async("ws://localhost:8080/ws").await?;
+#[derive(Debug)]
+struct AgentInner {
+    next_request_id: AtomicU64,
+    pending: Mutex<HashMap<RequestId, oneshot::Sender<Response>>>,
+    outbox: mpsc::Sender<JsonRPC>,
+    span: tracing::Span,
+}
 
-    while let Some(msg) = ws.try_next().await? {
-        let rpc: JsonRPC = msg.into_text()?.parse()?;
-        match rpc {
-            JsonRPC::Request(request) => {
-                let res: JsonRPC = handle_request(request).await?.into();
-                ws.send(Message::Text(res.to_string())).await?;
+impl Agent {
+    pub fn new(inbox: mpsc::Receiver<JsonRPC>, outbox: mpsc::Sender<JsonRPC>) -> Self {
+        let span = tracing::span!(Level::TRACE, "agent connection");
+        let agent = Agent(Arc::new(AgentInner {
+            next_request_id: AtomicU64::new(0),
+            pending: Default::default(),
+            outbox,
+            span,
+        }));
+
+        let clone = agent.clone();
+        tokio::spawn(async move { clone.process_inbox(inbox).await });
+        agent
+    }
+
+    #[instrument(parent = &self.0.span, skip(self, inbox))]
+    async fn process_inbox(self, mut inbox: mpsc::Receiver<JsonRPC>) {
+        while let Some(msg) = inbox.recv().await {
+            tracing::trace!(?msg, "receiver message");
+            match msg {
+                JsonRPC::Request(request) => {
+                    tracing::warn!(?request, "server received request, this should happen");
+                }
+                JsonRPC::Response(res) => {
+                    tracing::info!("{res:?}");
+
+                    let mut pending = self.0.pending.lock().unwrap();
+                    if let Some(tx) = pending.remove(&res.id) {
+                        tx.send(res).unwrap();
+                    } else {
+                        tracing::warn!(
+                            request_id = ?res.id,
+                            "received response for unknown request id"
+                        )
+                    }
+                }
+                JsonRPC::Notification(notification) => {
+                    tracing::warn!(
+                        ?notification,
+                        "server received notification, this should happen"
+                    );
+                }
             }
-            JsonRPC::Response(res) => tracing::warn!(?res, "received response, this should happen"),
-            JsonRPC::Notification(notification) => tracing::info!(?notification),
         }
     }
-    Ok(())
-}
 
-async fn handle_request(request: Request) -> Result<Response> {
-    match request.method.as_str() {
-        "ping" => handler::ping(&request),
-        _ => handler::unknown(&request),
+    async fn send_request<S: AsRef<str>, P: Serialize>(
+        &self,
+        method: S,
+        params: P,
+    ) -> oneshot::Receiver<Response> {
+        let id = self
+            .0
+            .next_request_id
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+            .into();
+        let request: JsonRPC = Request::new(id, method, params).into();
+
+        let (sender, receiver) = oneshot::channel();
+
+        {
+            let mut pending = self.0.pending.lock().unwrap();
+            pending.insert(id, sender);
+        }
+
+        self.0.outbox.send(request).await.unwrap();
+        receiver
     }
-}
 
-mod handler {
-    use crate::rpc::{ErrorCode, Request, Response};
-    use color_eyre::Result;
-    use tracing::instrument;
-
-    #[instrument]
-    pub(super) fn ping(request: &Request) -> Result<Response> {
-        tracing::info!("PONG");
-        Ok(Response::new_ok(request.id, "pong"))
-    }
-
-    #[instrument]
-    pub(super) fn unknown(request: &Request) -> Result<Response> {
-        Ok(Response::new_err(
-            request.id,
-            ErrorCode::MethodNotFound as i32,
-            "pong".to_string(),
-        ))
+    pub async fn ping(&self) -> Result<()> {
+        let res = self.send_request("ping", ()).await.await?;
+        if let Some(error) = res.error {
+            Err(color_eyre::eyre::eyre!("request error: {:?}", error))
+        } else {
+            Ok(())
+        }
     }
 }

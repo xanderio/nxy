@@ -7,6 +7,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
+mod agent;
 mod flake;
 mod server;
 
