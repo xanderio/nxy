@@ -1,10 +1,11 @@
-use axum::{Extension, Router};
+use std::sync::Arc;
+
+use agent::AgentManager;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::Context, Result};
 use flake::InputFlakeStore;
 use futures_util::stream::TryStreamExt;
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
 mod agent;
@@ -77,10 +78,12 @@ async fn check_for_updates(pool: PgPool) -> Result<()> {
 }
 
 async fn run_server(pool: PgPool) -> Result<()> {
-    let app = Router::new()
-        .layer(TraceLayer::new_for_http())
-        .layer(Extension(pool))
-        .nest("/", server::router());
+    let agent_manager = Arc::new(AgentManager::new());
+    let agent_manager_2 = Arc::clone(&agent_manager);
+    tokio::spawn(async move {
+        agent_manager_2.heartbeat().await;
+    });
+    let app = server::router(pool, agent_manager);
 
     axum::Server::bind(&"0.0.0.0:8080".parse()?)
         .serve(app.into_make_service())

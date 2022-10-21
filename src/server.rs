@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use axum::{
     extract::{
         ws::{Message, WebSocket},
-        WebSocketUpgrade,
+        Extension, WebSocketUpgrade,
     },
     headers,
     response::IntoResponse,
@@ -13,31 +15,38 @@ use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
+use sqlx::PgPool;
 use tokio::sync::mpsc;
+use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
 use rpc::{ErrorCode, JsonRPC, Response};
 
-use crate::agent::Agent;
+use crate::agent::{Agent, AgentManager};
 
-pub fn router() -> Router {
-    Router::new().route("/ws", get(ws_handler))
+pub fn router(pool: PgPool, agent_manager: Arc<AgentManager>) -> Router {
+    Router::new()
+        .route("/ws", get(ws_handler))
+        .layer(Extension(agent_manager))
+        .layer(Extension(pool))
+        .layer(TraceLayer::new_for_http())
 }
 
-#[instrument]
+#[instrument(skip_all)]
 async fn ws_handler(
     ws: WebSocketUpgrade,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
+    Extension(agent_manager): Extension<Arc<AgentManager>>,
 ) -> impl IntoResponse {
     if let Some(TypedHeader(user_agent)) = user_agent {
         tracing::info!("`{}` connected", user_agent.as_str());
     }
 
-    ws.on_upgrade(handle_socket)
+    ws.on_upgrade(|socket| handle_socket(socket, agent_manager))
 }
 
-#[instrument(skip(socket))]
-async fn handle_socket(socket: WebSocket) {
+#[instrument(skip_all)]
+async fn handle_socket(socket: WebSocket, agent_manager: Arc<AgentManager>) {
     let (inbox_sender, inbox) = mpsc::channel(4096);
     let (outbox, outbox_receiver) = mpsc::channel(4096);
     let (sink, stream) = socket.split();
@@ -45,14 +54,13 @@ async fn handle_socket(socket: WebSocket) {
     let outbox_handler = tokio::spawn(process_outbox(sink, outbox_receiver));
 
     let agent = Agent::new(inbox, outbox);
-    agent.ping().await.unwrap();
-    let status = agent.status().await.unwrap();
-    tracing::info!(?status);
+    agent_manager.add_agent(agent).await.unwrap();
 
     inbox_handler.await.unwrap().unwrap();
     outbox_handler.await.unwrap();
 }
 
+#[instrument(skip_all)]
 async fn process_outbox(
     mut sink: SplitSink<WebSocket, Message>,
     mut outbox_receiver: mpsc::Receiver<JsonRPC>,
@@ -62,7 +70,7 @@ async fn process_outbox(
     }
 }
 
-#[instrument(skip(stream, tx))]
+#[instrument(skip_all)]
 async fn process_inbox(
     mut stream: SplitStream<WebSocket>,
     tx: mpsc::Sender<JsonRPC>,

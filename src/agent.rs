@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     sync::{atomic::AtomicU64, Arc, Mutex},
+    time::Duration,
 };
 
 use color_eyre::{eyre::eyre, Result};
@@ -8,6 +9,40 @@ use rpc::{types::Status, JsonRPC, Request, RequestId, Response};
 use serde::Serialize;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{instrument, Level};
+use uuid::Uuid;
+
+pub struct AgentManager {
+    agents: Mutex<HashMap<Uuid, Agent>>,
+}
+
+impl AgentManager {
+    pub fn new() -> Self {
+        Self {
+            agents: Default::default(),
+        }
+    }
+
+    pub async fn heartbeat(&self) {
+        loop {
+            let agents = self.agents.lock().unwrap().clone();
+            for agent in agents.values() {
+                agent.ping().await.unwrap();
+            }
+            tokio::time::sleep(Duration::from_secs(5)).await
+        }
+    }
+
+    pub async fn add_agent(&self, agent: Agent) -> Result<()> {
+        // request agent status to aquire the agent id
+        let id = agent.status().await?.id;
+
+        {
+            let mut agents = self.agents.lock().unwrap();
+            agents.insert(id, agent);
+        }
+        Ok(())
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Agent(Arc<AgentInner>);

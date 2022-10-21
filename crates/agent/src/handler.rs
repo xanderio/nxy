@@ -12,7 +12,7 @@ use crate::STATE;
 
 #[instrument(skip(request))]
 pub(super) fn ping(request: &Request) -> Result<Response> {
-    tracing::info!("PONG");
+    tracing::trace!("PONG");
     Ok(Response::new_ok(request.id, "pong"))
 }
 
