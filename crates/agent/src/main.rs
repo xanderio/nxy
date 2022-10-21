@@ -1,11 +1,24 @@
+use std::{env::args, path::PathBuf, sync::Mutex};
+
 use color_eyre::Result;
 use futures_util::{SinkExt, TryStreamExt};
+use once_cell::sync::Lazy;
+use state::State;
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tracing::instrument;
 
 use rpc::{JsonRPC, Request, Response};
 
 mod handler;
+mod state;
+
+pub static STATE: Lazy<Mutex<State>> = Lazy::new(|| {
+    let path = args()
+        .nth(1)
+        .map(|p| p.parse::<PathBuf>().expect("first arg not a vaild path"));
+    let state = state::load(path);
+    Mutex::new(state)
+});
 
 #[tokio::main]
 #[instrument]

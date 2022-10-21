@@ -8,6 +8,8 @@ use rpc::{
 use serde_json::json;
 use tracing::instrument;
 
+use crate::STATE;
+
 #[instrument(skip(request))]
 pub(super) fn ping(request: &Request) -> Result<Response> {
     tracing::info!("PONG");
@@ -28,7 +30,12 @@ pub(super) async fn status(request: &Request) -> Result<Response> {
         current: current_system().await?,
         booted: booted_system().await?,
     };
+    let id = {
+        let state = STATE.lock().unwrap();
+        state.id
+    };
     let status = Status {
+        id,
         version: env!("CARGO_PKG_VERSION").to_string(),
         system,
     };
