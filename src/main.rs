@@ -100,10 +100,13 @@ fn install_tracing() {
     let filter_layer = EnvFilter::try_from_default_env()
         .or_else(|_| EnvFilter::try_new("info"))
         .unwrap();
+    let console_layer = console_subscriber::spawn();
 
     tracing_subscriber::registry()
         .with(filter_layer)
         .with(fmt_layer)
+        .with(console_layer)
+        .with(tracing_subscriber::fmt::layer())
         .with(ErrorLayer::default())
         .init();
 }

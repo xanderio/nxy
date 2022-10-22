@@ -66,6 +66,8 @@
             naersk'.buildPackage {
               inherit pname version;
               src = ./.;
+
+              RUSTFLAGS = "--cfg tokio_unstable";
             };
           nxy-agent =
             let
@@ -77,6 +79,8 @@
               inherit pname version;
               src = ./.;
               cargoBuildOptions = x: x ++ [ "--package agent" ];
+
+              RUSTFLAGS = "--cfg tokio_unstable";
             };
           default = nxy;
         };
@@ -108,6 +112,7 @@
           pkgs.mkShell {
             inputsFrom = [ self.packages.${system}.deploy-rs ];
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+            RUSTFLAGS = "--cfg tokio_unstable";
             PGDATA = ".pg/data";
             PGHOST = "${xdg_runtime_dir}/nxy";
             PGDATABASE = "nxy";
