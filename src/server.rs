@@ -75,51 +75,46 @@ async fn process_outbox(
 
 #[instrument(skip_all)]
 async fn process_inbox(mut stream: SplitStream<WebSocket>, tx: mpsc::Sender<JsonRPC>) {
-    while let Some(msg) = stream.next().await {
-        if let Ok(msg) = msg {
-            match msg {
-                Message::Text(t) => {
-                    tracing::debug!("client sent str: {:?}", t);
-                    let msg = match t.parse() {
-                        Ok(rpc) => rpc,
-                        Err(err) => {
-                            // compiler needs a little help with the type signature
-                            let err: Report = err;
-                            Response::new_err(
-                                // we don't have a request id in this case, the standard allow
-                                // that the request id is empty in this case, but our
-                                // implementation doesn't support this.
-                                u64::MAX.into(),
-                                ErrorCode::ParseError as i32,
-                                err.to_string(),
-                            )
-                            .into()
-                        }
-                    };
-                    if let Err(err) = tx.send(msg).await {
-                        tracing::warn!(
-                            ?err,
-                            "error sending incomming msg to agent, closing connection"
-                        );
-                        break;
-                    };
-                }
-                Message::Binary(_) => {
+    while let Some(Ok(msg)) = stream.next().await {
+        match msg {
+            Message::Text(t) => {
+                tracing::debug!("client sent str: {:?}", t);
+                let msg = match t.parse() {
+                    Ok(rpc) => rpc,
+                    Err(err) => {
+                        // compiler needs a little help with the type signature
+                        let err: Report = err;
+                        Response::new_err(
+                            // we don't have a request id in this case, the standard allow
+                            // that the request id is empty in this case, but our
+                            // implementation doesn't support this.
+                            u64::MAX.into(),
+                            ErrorCode::ParseError as i32,
+                            err.to_string(),
+                        )
+                        .into()
+                    }
+                };
+                if let Err(err) = tx.send(msg).await {
                     tracing::warn!(
-                        "client sent binary data, this is not supported. Closing connection"
+                        ?err,
+                        "error sending incomming msg to agent, closing connection"
                     );
                     break;
-                }
-                // ignore ping and pong axum handles this for us
-                Message::Ping(_) | Message::Pong(_) => {}
-                Message::Close(_) => {
-                    tracing::info!("client disconnected");
-                    break;
-                }
+                };
             }
-        } else {
-            tracing::info!("client disconnected");
-            break;
+            Message::Binary(_) => {
+                tracing::warn!(
+                    "client sent binary data, this is not supported. Closing connection"
+                );
+                break;
+            }
+            // ignore ping and pong axum handles this for us
+            Message::Ping(_) | Message::Pong(_) => {}
+            Message::Close(_) => {
+                break;
+            }
         }
     }
+    tracing::debug!("client disconnected");
 }
