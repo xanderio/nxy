@@ -8,39 +8,27 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    naersk.url = "github:nix-community/naersk";
+    crane = {
+      url = "github:ipetkov/crane";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "utils";
+    };
     utils.url = "github:numtide/flake-utils";
+    gitignore = {
+      url = "github:hercules-ci/gitignore.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, naersk, utils, ... }:
+  outputs = { self, nixpkgs, crane, gitignore, utils, ... }:
     {
       overlays.default = final: prev:
         let
           system = final.stdenv.hostPlatform.system;
-          naersk' = final.callPackage naersk { };
-          darwinOptions = final.lib.optionalAttrs final.stdenv.isDarwin {
-            buildInputs = with final.darwin.apple_sdk.frameworks; [
-              SystemConfiguration
-              CoreServices
-            ];
-          };
         in
         {
           deploy-rs = {
-            deploy-rs =
-              let
-                cargoToml = builtins.fromTOML (builtins.readFile ./crates/deploy/Cargo.toml);
-                pname = cargoToml.package.name;
-                version = cargoToml.package.version;
-              in
-              naersk'.buildPackage
-                (darwinOptions // {
-                  inherit pname version;
-
-                  src = ./.;
-                  cargoBuildOptions = x: x ++ [ "--package deploy" ];
-
-                }) // { meta.description = "A Simple multi-profile Nix-flake deploy tool"; };
+            deploy-rs = self.packages.${system}.deploy-rs;
 
             lib = import ./lib { inherit self final system; };
           };
@@ -52,36 +40,35 @@
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; overlays = [ self.overlays.default ]; };
-        naersk' = pkgs.callPackage naersk { };
+        inherit (gitignore.lib) gitignoreSource;
+
+        craneLib = crane.lib.${system};
+        commonArgs = {
+          src = gitignoreSource ./.;
+
+          # enable unstable tokio `tracing` feature
+          RUSTFLAGS = "--cfg tokio_unstable";
+        };
+
+        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
       in
       {
         packages = rec {
-          deploy-rs = pkgs.deploy-rs.deploy-rs;
-          nxy =
-            let
-              cargoToml = builtins.fromTOML (builtins.readFile ./Cargo.toml);
-              pname = cargoToml.package.name;
-              version = cargoToml.package.version;
-            in
-            naersk'.buildPackage {
-              inherit pname version;
-              src = ./.;
+          nxy = craneLib.buildPackage (commonArgs // {
+            inherit cargoArtifacts;
+          });
 
-              RUSTFLAGS = "--cfg tokio_unstable";
-            };
-          nxy-agent =
-            let
-              cargoToml = builtins.fromTOML (builtins.readFile ./crates/agent/Cargo.toml);
-              pname = cargoToml.package.name;
-              version = cargoToml.package.version;
-            in
-            naersk'.buildPackage {
-              inherit pname version;
-              src = ./.;
-              cargoBuildOptions = x: x ++ [ "--package agent" ];
+          nxy-agent = craneLib.buildPackage (commonArgs // {
+            inherit cargoArtifacts;
+            cargoEtraArgs = "--package agent";
+          } // craneLib.crateNameFromCargoToml { cargoToml = ./crates/agent/Cargo.toml; });
 
-              RUSTFLAGS = "--cfg tokio_unstable";
-            };
+          deploy-rs = craneLib.buildPackage (commonArgs // {
+            inherit cargoArtifacts;
+            cargoEtraArgs = "--package deploy";
+          } // craneLib.crateNameFromCargoToml { cargoToml = ./crates/deploy/Cargo.toml; });
+
           default = nxy;
         };
 
