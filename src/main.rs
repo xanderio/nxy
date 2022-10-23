@@ -100,7 +100,6 @@ fn install_tracing() {
         .with(filter_layer)
         .with(fmt_layer)
         .with(console_layer)
-        .with(tracing_subscriber::fmt::layer())
         .with(ErrorLayer::default())
         .init();
 }
