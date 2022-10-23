@@ -1,11 +1,4 @@
-# SPDX-FileCopyrightText: 2020 Serokell <https://serokell.io/>
-# SPDX-FileCopyrightText: 2020 Andreas Fuchs <asf@boinkor.net>
-#
-# SPDX-License-Identifier: MPL-2.0
-
 {
-  description = "A Simple multi-profile Nix-flake deploy tool.";
-
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     crane = {
@@ -22,24 +15,13 @@
 
   outputs = { self, nixpkgs, crane, gitignore, utils, ... }:
     {
-      overlays.default = final: prev:
-        let
-          system = final.stdenv.hostPlatform.system;
-        in
-        {
-          deploy-rs = {
-            deploy-rs = self.packages.${system}.deploy-rs;
-
-            lib = import ./lib { inherit self final system; };
-          };
-        };
       herculesCI = {
         ciSystems = [ "x86_64-linux" ];
       };
     } //
     utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; overlays = [ self.overlays.default ]; };
+        pkgs = import nixpkgs { inherit system; };
         inherit (gitignore.lib) gitignoreSource;
 
         craneLib = crane.lib.${system};
@@ -64,19 +46,10 @@
             cargoEtraArgs = "--package agent";
           } // craneLib.crateNameFromCargoToml { cargoToml = ./crates/agent/Cargo.toml; });
 
-          deploy-rs = craneLib.buildPackage (commonArgs // {
-            inherit cargoArtifacts;
-            cargoEtraArgs = "--package deploy";
-          } // craneLib.crateNameFromCargoToml { cargoToml = ./crates/deploy/Cargo.toml; });
-
           default = nxy;
         };
 
         apps = rec {
-          deploy-rs = {
-            type = "app";
-            program = "${self.packages."${system}".deploy-rs}/bin/deploy";
-          };
           nxy = {
             type = "app";
             program = "${self.packages."${system}".nxy}/bin/nxy";
@@ -97,7 +70,6 @@
                 builtins.getEnv "XDG_RUNTIME_DIR";
           in
           pkgs.mkShell {
-            inputsFrom = [ self.packages.${system}.deploy-rs ];
             RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
             RUSTFLAGS = "--cfg tokio_unstable";
             PGDATA = ".pg/data";
@@ -130,11 +102,5 @@
               fi
             '';
           };
-
-        checks = {
-          deploy-rs = self.packages.${system}.default.overrideAttrs (super: { doCheck = true; });
-        };
-
-        lib = pkgs.deploy-rs.lib;
       });
 }

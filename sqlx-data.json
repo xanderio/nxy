@@ -1,5 +1,17 @@
 {
   "db": "PostgreSQL",
+  "02ccdd5994dc03a27d8ab60d769410589dd9f1f3286245a039076ff43e572485": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "insert into agents (agent_id) values ($1)"
+  },
   "04bfb4860007708ddf561a30fc60742d4b3c4f2aa500132b4bb89fbd3b5c459b": {
     "describe": {
       "columns": [
@@ -129,6 +141,26 @@
       }
     },
     "query": "select * from input_flakes where flake_url = $1"
+  },
+  "3bd52fe6c283e21c1c5b12f1f69114837d1552afa4efab3128242df3a4edc299": {
+    "describe": {
+      "columns": [
+        {
+          "name": "agent_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "select agent_id from agents where agent_id = $1"
   },
   "9ff57d4e5544ba72dcd6b131b697df9b269ada3205906e2e809ca061fe3cad04": {
     "describe": {
