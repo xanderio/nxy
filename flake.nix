@@ -110,7 +110,6 @@
               rustc
               rustfmt
               clippy
-              reuse
               rust.packages.stable.rustPlatform.rustLibSrc
               postgresql_14
               python3Packages.pgcli
