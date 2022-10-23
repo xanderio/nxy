@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use agent::AgentManager;
 use clap::{Parser, Subcommand};
 use color_eyre::{eyre::Context, Result};
@@ -78,11 +76,7 @@ async fn check_for_updates(pool: PgPool) -> Result<()> {
 }
 
 async fn run_server(pool: PgPool) -> Result<()> {
-    let agent_manager = Arc::new(AgentManager::new());
-    let agent_manager_2 = Arc::clone(&agent_manager);
-    tokio::spawn(async move {
-        agent_manager_2.heartbeat().await;
-    });
+    let agent_manager = AgentManager::start(pool.clone()).await;
     let app = server::router(pool, agent_manager);
 
     axum::Server::bind(&"0.0.0.0:8080".parse()?)

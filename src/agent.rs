@@ -7,19 +7,27 @@ use std::{
 use color_eyre::{eyre::eyre, Result};
 use rpc::{types::Status, JsonRPC, Request, RequestId, Response};
 use serde::Serialize;
+use sqlx::PgPool;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{instrument, Level};
 use uuid::Uuid;
 
 pub struct AgentManager {
+    pool: PgPool,
     agents: Mutex<HashMap<Uuid, Agent>>,
 }
 
 impl AgentManager {
-    pub fn new() -> Self {
-        Self {
+    pub async fn start(pool: PgPool) -> Arc<Self> {
+        let manager = Arc::new(Self {
+            pool,
             agents: Default::default(),
-        }
+        });
+
+        let manager_c = Arc::clone(&manager);
+        tokio::spawn(async move { manager_c.heartbeat().await });
+
+        manager
     }
 
     pub async fn heartbeat(&self) {
@@ -35,6 +43,19 @@ impl AgentManager {
     pub async fn add_agent(&self, agent: Agent) -> Result<()> {
         // request agent status to aquire the agent id
         let id = agent.status().await?.id;
+
+        let result = sqlx::query_scalar!("select agent_id from agents where agent_id = $1", id)
+            .fetch_optional(&self.pool)
+            .await?;
+
+        if result.is_none() {
+            tracing::info!(?id, "new agent established a connection");
+            sqlx::query!("insert into agents (agent_id) values ($1)", id)
+                .execute(&self.pool)
+                .await?;
+        } else {
+            tracing::info!(?id, "known agent connected");
+        }
 
         {
             let mut agents = self.agents.lock().unwrap();

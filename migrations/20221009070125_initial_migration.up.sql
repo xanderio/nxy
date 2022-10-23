@@ -8,3 +8,7 @@ create table input_flakes (
         url text not null,
         locks jsonb not null
 );
+
+create table agents (
+	agent_id uuid primary key
+);
