@@ -27,6 +27,7 @@ use crate::agent::{Agent, AgentManager};
 pub fn router(pool: PgPool, agent_manager: Arc<AgentManager>) -> Router {
     Router::new()
         .route("/ws", get(ws_handler))
+        .nest("/api", crate::api::router())
         .layer(Extension(agent_manager))
         .layer(Extension(pool))
         .layer(TraceLayer::new_for_http())
