@@ -12,65 +12,13 @@
     },
     "query": "insert into agents (agent_id) values ($1)"
   },
-  "04bfb4860007708ddf561a30fc60742d4b3c4f2aa500132b4bb89fbd3b5c459b": {
+  "083a00d67e115aa902857f225ea69ecc8a0d99e7b44ee9ff11b781e591b2337b": {
     "describe": {
-      "columns": [
-        {
-          "name": "input_flake_id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "flake_url",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "description",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "path",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "revision",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "last_modified",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "url",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "locks",
-          "ordinal": 7,
-          "type_info": "Jsonb"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
+      "columns": [],
+      "nullable": [],
       "parameters": {
         "Left": [
-          "Text",
-          "Text",
-          "Text",
+          "Int8",
           "Text",
           "Timestamptz",
           "Text",
@@ -78,69 +26,7 @@
         ]
       }
     },
-    "query": "insert into input_flakes \n                (flake_url, description, path, revision, last_modified, url, locks) values \n                ($1, $2, $3, $4, $5, $6, $7)\n                returning *"
-  },
-  "2b3f24bc92c9ce26555cc6574bcaebdc419f80a5d9963c5ee756bbf29f935567": {
-    "describe": {
-      "columns": [
-        {
-          "name": "input_flake_id",
-          "ordinal": 0,
-          "type_info": "Int8"
-        },
-        {
-          "name": "flake_url",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "description",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "path",
-          "ordinal": 3,
-          "type_info": "Text"
-        },
-        {
-          "name": "revision",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
-          "name": "last_modified",
-          "ordinal": 5,
-          "type_info": "Timestamptz"
-        },
-        {
-          "name": "url",
-          "ordinal": 6,
-          "type_info": "Text"
-        },
-        {
-          "name": "locks",
-          "ordinal": 7,
-          "type_info": "Jsonb"
-        }
-      ],
-      "nullable": [
-        false,
-        false,
-        true,
-        false,
-        false,
-        false,
-        false,
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Text"
-        ]
-      }
-    },
-    "query": "select * from input_flakes where flake_url = $1"
+    "query": "\n            insert into flake_revisions (flake_id, revision, last_modified, url, metadata)\n            values ($1, $2, $3, $4, $5)\n            "
   },
   "3bd52fe6c283e21c1c5b12f1f69114837d1552afa4efab3128242df3a4edc299": {
     "describe": {
@@ -162,11 +48,11 @@
     },
     "query": "select agent_id from agents where agent_id = $1"
   },
-  "9ff57d4e5544ba72dcd6b131b697df9b269ada3205906e2e809ca061fe3cad04": {
+  "47fc82cbeae563a394bf44aabc53ac7f13ee5fc6dc697ca78b1ce981564c2736": {
     "describe": {
       "columns": [
         {
-          "name": "input_flake_id",
+          "name": "flake_id",
           "ordinal": 0,
           "type_info": "Int8"
         },
@@ -176,41 +62,119 @@
           "type_info": "Text"
         },
         {
-          "name": "description",
+          "name": "flake_revision_id!",
           "ordinal": 2,
-          "type_info": "Text"
+          "type_info": "Int8"
         },
         {
-          "name": "path",
+          "name": "revision",
           "ordinal": 3,
           "type_info": "Text"
         },
         {
-          "name": "revision",
-          "ordinal": 4,
-          "type_info": "Text"
-        },
-        {
           "name": "last_modified",
-          "ordinal": 5,
+          "ordinal": 4,
           "type_info": "Timestamptz"
         },
         {
           "name": "url",
-          "ordinal": 6,
+          "ordinal": 5,
           "type_info": "Text"
-        },
-        {
-          "name": "locks",
-          "ordinal": 7,
-          "type_info": "Jsonb"
         }
       ],
       "nullable": [
         false,
         false,
-        true,
+        null,
         false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n        with last_rev as (\n            select flake_id, max(flake_revision_id) as flake_revision_id\n            from flake_revisions\n            group by flake_id\n        )\n        select flakes.flake_id, flake_url, flake_revision_id as \"flake_revision_id!\", revision, last_modified, url\n        from flakes\n        join last_rev using (flake_id)\n        join flake_revisions using (flake_revision_id)\n        "
+  },
+  "901827a3edfb6b3b09676ea976461d23126921fcc6514213fadc1feaf0131475": {
+    "describe": {
+      "columns": [
+        {
+          "name": "flake_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "flake_url",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "flake_revision_id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "revision",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "last_modified",
+          "ordinal": 4,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "url",
+          "ordinal": 5,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Timestamptz",
+          "Text",
+          "Jsonb"
+        ]
+      }
+    },
+    "query": "\n            with inserted_flake as (\n                insert into flakes (flake_url)\n                values ($1)\n                returning flake_id, flake_url\n            ), inserted_revision as (\n                insert into flake_revisions (flake_id, revision, last_modified, url, metadata)\n                select flake_id, $2, $3, $4, $5\n                from inserted_flake\n                returning flake_revision_id, revision, last_modified, url\n            )\n            select flake_id, flake_url, flake_revision_id, revision, last_modified, url\n            from inserted_flake, inserted_revision\n        "
+  },
+  "b852724fcc7c59860c7ba547e4a660bc3d3f43591a43ec939edbc2c16f25152b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "flake_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "flake_url",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "revision",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "last_modified",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
         false,
         false,
         false,
@@ -220,6 +184,6 @@
         "Left": []
       }
     },
-    "query": "select * from input_flakes"
+    "query": "\n        with last_rev as (\n            select flake_id, max(flake_revision_id) as flake_revision_id\n            from flake_revisions\n            group by flake_id\n        )\n        select flakes.flake_id, flake_url, revision, last_modified \n        from flakes\n        join last_rev using (flake_id)\n        join flake_revisions using (flake_revision_id)\n        "
   }
 }
