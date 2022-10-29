@@ -6,8 +6,6 @@ create table flakes(
 create table flake_revisions (
 	flake_revision_id bigint generated always as identity primary key,
 	flake_id bigint references flakes,
-        description text,
-        path text not null,
         revision text not null, 
         last_modified timestamp with time zone not null,
         url text not null,

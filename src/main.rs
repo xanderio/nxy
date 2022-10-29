@@ -6,6 +6,7 @@ mod agent;
 mod api;
 mod error;
 mod http;
+mod nix;
 mod server;
 
 #[tokio::main]
