@@ -7,6 +7,12 @@ version = "0.1.0"
 authors = ["Alexander Sieg <alex@xanderio.de>"]
 edition = "2021"
 
+[[bin]]
+name = "nxy"
+
+[[bin]]
+name = "nxyd"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -14,13 +20,13 @@ color-eyre = "0.6.2"
 serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.85"
 tokio = { version = "1.21.2", features = [
-        "process",
-        "macros",
-        "sync",
-        "rt-multi-thread",
-        "fs",
-        "time",
-        "tracing",
+	"process",
+	"macros",
+	"sync",
+	"rt-multi-thread",
+	"fs",
+	"time",
+	"tracing",
 ] }
 tracing = "0.1.36"
 tracing-error = "0.2.0"
@@ -28,14 +34,14 @@ tracing-subscriber = { version = "0.3.15", features = ["env-filter"] }
 
 rpc = { path = "crates/rpc" }
 sqlx = { version = "0.6.2", features = [
-        "runtime-tokio-rustls",
-        "postgres",
-        "offline",
-        "macros",
-        "migrate",
-        "json",
-        "chrono",
-        "uuid",
+	"runtime-tokio-rustls",
+	"postgres",
+	"offline",
+	"macros",
+	"migrate",
+	"json",
+	"chrono",
+	"uuid",
 ] }
 chrono = { version = "0.4.22", features = ["serde"] }
 futures-util = "0.3.24"

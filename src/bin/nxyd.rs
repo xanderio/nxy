@@ -1,13 +1,6 @@
-use agent::AgentManager;
 use color_eyre::{eyre::Context, Result};
+use nxy::agent::AgentManager;
 use sqlx::{postgres::PgPoolOptions, PgPool};
-
-mod agent;
-mod api;
-mod error;
-mod http;
-mod nix;
-mod server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -23,7 +16,7 @@ async fn main() -> Result<()> {
 
 async fn run_server(pool: PgPool) -> Result<()> {
     let agent_manager = AgentManager::start(pool.clone()).await;
-    let app = server::router(pool, agent_manager);
+    let app = nxy::server::router(pool, agent_manager);
 
     tracing::info!("running on 0.0.0.0:8080");
     axum::Server::bind(&"0.0.0.0:8080".parse()?)
