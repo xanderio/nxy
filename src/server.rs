@@ -10,7 +10,6 @@ use axum::{
     routing::get,
     Router, TypedHeader,
 };
-use color_eyre::Report;
 use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
@@ -84,7 +83,7 @@ async fn process_inbox(mut stream: SplitStream<WebSocket>, tx: mpsc::Sender<Json
                     Ok(rpc) => rpc,
                     Err(err) => {
                         // compiler needs a little help with the type signature
-                        let err: Report = err;
+                        let err: rpc::error::Error = err;
                         Response::new_err(
                             // we don't have a request id in this case, the standard allow
                             // that the request id is empty in this case, but our

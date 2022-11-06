@@ -1,3 +1,4 @@
+pub mod error;
 pub mod types;
 
 use std::{fmt::Display, str::FromStr};
@@ -95,7 +96,7 @@ impl From<u64> for RequestId {
 }
 
 impl FromStr for JsonRPC {
-    type Err = color_eyre::Report;
+    type Err = crate::error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         serde_json::from_str(s).map_err(Into::into)
