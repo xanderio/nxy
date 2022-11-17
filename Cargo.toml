@@ -55,7 +55,7 @@ tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["trace"] }
 uuid = "1.2.1"
 thiserror = "1.0.37"
-serde_with = "2.0.1"
+serde_with = "2.1.0"
 
 console-subscriber = { version = "0.1.8", optional = true }
 
