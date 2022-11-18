@@ -53,7 +53,7 @@ axum = { version = "0.5.16", features = ["ws", "headers"] }
 hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["trace"] }
-uuid = "1.2.1"
+uuid = "1.2.2"
 thiserror = "1.0.37"
 serde_with = "2.1.0"
 
