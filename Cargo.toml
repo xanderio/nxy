@@ -47,7 +47,7 @@ sqlx = { version = "0.6.2", features = [
 	"chrono",
 	"uuid",
 ] }
-chrono = { version = "0.4.22", features = ["serde"] }
+chrono = { version = "0.4.23", features = ["serde"] }
 futures-util = "0.3.24"
 axum = { version = "0.5.17", features = ["ws", "headers"] }
 hyper = { version = "0.14.20", features = ["full"] }
