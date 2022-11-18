@@ -50,7 +50,7 @@ sqlx = { version = "0.6.2", features = [
 chrono = { version = "0.4.22", features = ["serde"] }
 futures-util = "0.3.24"
 axum = { version = "0.5.17", features = ["ws", "headers"] }
-hyper = { version = "0.14.20", features = ["full"] }
+hyper = { version = "0.14.23", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["trace"] }
 uuid = "1.2.2"
