@@ -43,6 +43,7 @@ pub async fn list_configurations(flake_url: &str) -> Result<Vec<String>> {
 
 #[instrument]
 pub async fn build_configuration(flake_url: &str, name: &str) -> Result<Value> {
+    tracing::info!("building configuration");
     let mut cmd = Command::new("nix");
     cmd.args([
         "build",
@@ -51,7 +52,9 @@ pub async fn build_configuration(flake_url: &str, name: &str) -> Result<Value> {
         format!("{flake_url}#nixosConfigurations.{name}.config.system.build.toplevel").as_str(),
     ]);
 
-    json_output(cmd).await
+    let res = json_output(cmd).await;
+    tracing::info!("done");
+    res
 }
 
 #[instrument(skip(pool))]

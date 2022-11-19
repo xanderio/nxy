@@ -1,7 +1,7 @@
 use axum::{extract::State, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
-use crate::nix::flake_metadata;
+use crate::nix::{build_all_configurations, flake_metadata};
 
 use super::{ApiContext, Result};
 
@@ -67,6 +67,11 @@ async fn create_flake(
     )
     .fetch_one(&ctx.db)
     .await?;
+
+    tokio::spawn(build_all_configurations(
+        ctx.db.clone(),
+        flake.flake_revision_id,
+    ));
 
     Ok(Json(FlakeBody {
         flake: Flake {
@@ -140,10 +145,11 @@ async fn update_flake(ctx: State<ApiContext>) -> Result<()> {
         if metadata.revision == flake.revision {
             continue;
         }
-        sqlx::query!(
+        let flake_revision_id = sqlx::query_scalar!(
             r#"
-            insert into flake_revisions (flake_id, revision, last_modified, url, metadata)
-            values ($1, $2, $3, $4, $5)
+            INSERT INTO flake_revisions (flake_id, revision, last_modified, url, metadata)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING flake_revision_id
             "#,
             flake.flake_id,
             metadata.revision,
@@ -151,8 +157,10 @@ async fn update_flake(ctx: State<ApiContext>) -> Result<()> {
             metadata.url,
             meta
         )
-        .execute(&ctx.db)
+        .fetch_one(&ctx.db)
         .await?;
+
+        tokio::spawn(build_all_configurations(ctx.db.clone(), flake_revision_id));
     }
     Ok(())
 }
