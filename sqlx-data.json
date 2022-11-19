@@ -96,6 +96,26 @@
     },
     "query": "\n        with last_rev as (\n            select flake_id, max(flake_revision_id) as flake_revision_id\n            from flake_revisions\n            group by flake_id\n        )\n        select flakes.flake_id, flake_url, flake_revision_id as \"flake_revision_id!\", revision, last_modified, url\n        from flakes\n        join last_rev using (flake_id)\n        join flake_revisions using (flake_revision_id)\n        "
   },
+  "49b4d4c9ac3589e24161c3255d9c7633e1ff8c83b4790db67a962661653eca9c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "url",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT url FROM flake_revisions WHERE flake_revision_id = $1"
+  },
   "901827a3edfb6b3b09676ea976461d23126921fcc6514213fadc1feaf0131475": {
     "describe": {
       "columns": [
