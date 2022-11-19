@@ -1,14 +1,20 @@
-use axum::{routing::get, Extension, Json, Router};
+use axum::{extract::State, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 
-use crate::{http::Result, nix::flake_metadata};
+use crate::nix::flake_metadata;
 
-pub fn router() -> Router {
+use super::{ApiContext, Result};
+
+pub(crate) fn router() -> Router<ApiContext> {
     Router::new().route(
-        "/v1/flake",
+        "/api/v1/flake",
         get(get_flakes).post(create_flake).put(update_flake),
     )
+}
+
+#[derive(Serialize, Deserialize)]
+struct FlakeBody<T> {
+    flake: T,
 }
 
 #[derive(Serialize)]
@@ -27,18 +33,18 @@ struct FlakeRevision {
 }
 
 #[derive(Deserialize)]
-struct CreateFlakeRequest {
+struct NewFlake {
     flake_url: String,
 }
 
 async fn create_flake(
-    Extension(db): Extension<PgPool>,
-    Json(req): Json<CreateFlakeRequest>,
-) -> Result<Json<Flake>> {
+    ctx: State<ApiContext>,
+    Json(req): Json<FlakeBody<NewFlake>>,
+) -> Result<Json<FlakeBody<Flake>>> {
     // fetch flake metadata, this also validates the flake url
-    let (metadata, meta) = flake_metadata(&req.flake_url).await?;
+    let (metadata, meta) = flake_metadata(&req.flake.flake_url).await?;
 
-    let result = sqlx::query!(
+    let flake = sqlx::query!(
         r#"
             with inserted_flake as (
                 insert into flakes (flake_url)
@@ -53,32 +59,30 @@ async fn create_flake(
             select flake_id, flake_url, flake_revision_id, revision, last_modified, url
             from inserted_flake, inserted_revision
         "#,
-        req.flake_url,
+        req.flake.flake_url,
         metadata.revision,
         metadata.last_modified,
         metadata.url,
         meta
     )
-    .fetch_one(&db)
+    .fetch_one(&ctx.db)
     .await?;
 
-    let revision = FlakeRevision {
-        flake_revision_id: result.flake_revision_id,
-        revision: result.revision,
-        last_modified: result.last_modified.to_string(),
-        url: result.url,
-    };
-
-    let flake = Flake {
-        flake_id: result.flake_id,
-        flake_url: result.flake_url,
-        lastest_revision: revision,
-    };
-
-    Ok(Json(flake))
+    Ok(Json(FlakeBody {
+        flake: Flake {
+            flake_id: flake.flake_id,
+            flake_url: flake.flake_url,
+            lastest_revision: FlakeRevision {
+                flake_revision_id: flake.flake_revision_id,
+                revision: flake.revision,
+                last_modified: flake.last_modified.to_string(),
+                url: flake.url,
+            },
+        },
+    }))
 }
 
-async fn get_flakes(Extension(db): Extension<PgPool>) -> Result<Json<Vec<Flake>>> {
+async fn get_flakes(ctx: State<ApiContext>) -> Result<Json<Vec<Flake>>> {
     let flakes = sqlx::query!(
         r#"
         with last_rev as (
@@ -92,8 +96,8 @@ async fn get_flakes(Extension(db): Extension<PgPool>) -> Result<Json<Vec<Flake>>
         join flake_revisions using (flake_revision_id)
         "#,
     )
-    .fetch_all(&db).await?
-        .into_iter()
+    .fetch_all(&ctx.db).await?
+    .into_iter()
     .map(|row| {
         let revision = FlakeRevision {
             flake_revision_id: row.flake_revision_id,
@@ -113,7 +117,7 @@ async fn get_flakes(Extension(db): Extension<PgPool>) -> Result<Json<Vec<Flake>>
     Ok(Json(flakes))
 }
 
-async fn update_flake(Extension(db): Extension<PgPool>) -> Result<()> {
+async fn update_flake(ctx: State<ApiContext>) -> Result<()> {
     let flakes = sqlx::query!(
         r#"
         with last_rev as (
@@ -127,7 +131,7 @@ async fn update_flake(Extension(db): Extension<PgPool>) -> Result<()> {
         join flake_revisions using (flake_revision_id)
         "#
     )
-    .fetch_all(&db)
+    .fetch_all(&ctx.db)
     .await?;
 
     for flake in flakes {
@@ -147,7 +151,7 @@ async fn update_flake(Extension(db): Extension<PgPool>) -> Result<()> {
             metadata.url,
             meta
         )
-        .execute(&db)
+        .execute(&ctx.db)
         .await?;
     }
     Ok(())

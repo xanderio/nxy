@@ -12,6 +12,7 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{instrument, Level};
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct AgentManager {
     pool: PgPool,
     agents: Mutex<HashMap<Uuid, Agent>>,

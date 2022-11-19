@@ -1,6 +1,6 @@
 use color_eyre::{eyre::Context, Result};
 use nxy::agent::AgentManager;
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::postgres::PgPoolOptions;
 use tracing::subscriber::Subscriber;
 use tracing_subscriber::Layer;
 
@@ -13,18 +13,9 @@ async fn main() -> Result<()> {
     let pool = PgPoolOptions::new().connect(&database_url).await?;
     sqlx::migrate!().run(&pool).await?;
 
-    run_server(pool).await
-}
-
-async fn run_server(pool: PgPool) -> Result<()> {
     let agent_manager = AgentManager::start(pool.clone()).await;
-    let app = nxy::server::router(pool, agent_manager);
 
-    tracing::info!("running on 0.0.0.0:8080");
-    axum::Server::bind(&"0.0.0.0:8080".parse()?)
-        .serve(app.into_make_service())
-        .await
-        .map_err(Into::into)
+    nxy::http::serve(pool, agent_manager).await
 }
 
 fn install_tracing() {

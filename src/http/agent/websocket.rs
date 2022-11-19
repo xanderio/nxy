@@ -1,52 +1,37 @@
-use std::sync::Arc;
-
 use axum::{
     extract::{
         ws::{Message, WebSocket},
-        Extension, WebSocketUpgrade,
+        State, WebSocketUpgrade,
     },
     headers,
     response::IntoResponse,
-    routing::get,
-    Router, TypedHeader,
+    TypedHeader,
 };
 use futures_util::{
     stream::{SplitSink, SplitStream},
     SinkExt, StreamExt,
 };
-use sqlx::PgPool;
+use rpc::{ErrorCode, JsonRPC, Response};
 use tokio::sync::mpsc;
-use tower_http::trace::TraceLayer;
 use tracing::instrument;
 
-use rpc::{ErrorCode, JsonRPC, Response};
-
-use crate::agent::{Agent, AgentManager};
-
-pub fn router(pool: PgPool, agent_manager: Arc<AgentManager>) -> Router {
-    Router::new()
-        .route("/ws", get(ws_handler))
-        .nest("/api", crate::api::router())
-        .layer(Extension(agent_manager))
-        .layer(Extension(pool))
-        .layer(TraceLayer::new_for_http())
-}
+use crate::{agent::Agent, http::ApiContext};
 
 #[instrument(skip_all)]
-async fn ws_handler(
+pub(super) async fn ws_handler(
     ws: WebSocketUpgrade,
+    ctx: State<ApiContext>,
     user_agent: Option<TypedHeader<headers::UserAgent>>,
-    Extension(agent_manager): Extension<Arc<AgentManager>>,
 ) -> impl IntoResponse {
     if let Some(TypedHeader(user_agent)) = user_agent {
         tracing::info!("`{}` connected", user_agent.as_str());
     }
 
-    ws.on_upgrade(|socket| handle_socket(socket, agent_manager))
+    ws.on_upgrade(|socket| handle_socket(socket, ctx))
 }
 
 #[instrument(skip_all)]
-async fn handle_socket(socket: WebSocket, agent_manager: Arc<AgentManager>) {
+async fn handle_socket(socket: WebSocket, ctx: State<ApiContext>) {
     let (inbox_sender, inbox) = mpsc::channel(4096);
     let (outbox, outbox_receiver) = mpsc::channel(4096);
     let (sink, stream) = socket.split();
@@ -54,7 +39,7 @@ async fn handle_socket(socket: WebSocket, agent_manager: Arc<AgentManager>) {
     let outbox_handler = tokio::spawn(process_outbox(sink, outbox_receiver));
 
     let agent = Agent::new(inbox, outbox);
-    agent_manager.add_agent(agent).await.unwrap();
+    ctx.agent_manager.add_agent(agent).await.unwrap();
 
     inbox_handler.await.unwrap();
     outbox_handler.await.unwrap();

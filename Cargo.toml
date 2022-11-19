@@ -24,13 +24,13 @@ color-eyre = "0.6.2"
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.85"
 tokio = { version = "1.22.0", features = [
-	"process",
-	"macros",
-	"sync",
-	"rt-multi-thread",
-	"fs",
-	"time",
-	"tracing",
+        "process",
+        "macros",
+        "sync",
+        "rt-multi-thread",
+        "fs",
+        "time",
+        "tracing",
 ] }
 tracing = "0.1.37"
 tracing-error = "0.2.0"
@@ -38,24 +38,23 @@ tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 
 rpc = { path = "crates/rpc" }
 sqlx = { version = "0.6.2", features = [
-	"runtime-tokio-rustls",
-	"postgres",
-	"offline",
-	"macros",
-	"migrate",
-	"json",
-	"chrono",
-	"uuid",
+        "runtime-tokio-rustls",
+        "postgres",
+        "offline",
+        "macros",
+        "migrate",
+        "json",
+        "chrono",
+        "uuid",
 ] }
 chrono = { version = "0.4.23", features = ["serde"] }
 futures-util = "0.3.25"
-axum = { version = "0.5.17", features = ["ws", "headers"] }
-hyper = { version = "0.14.23", features = ["full"] }
+axum = { version = "=0.6.0-rc.5", features = ["ws", "headers", "macros"] }
+hyper = { version = "0.14.23", features = [] }
 tower = "0.4.13"
 tower-http = { version = "0.3.4", features = ["trace"] }
 uuid = "1.2.2"
 thiserror = "1.0.37"
-serde_with = "2.1.0"
 
 console-subscriber = { version = "0.1.8", optional = true }
 
