@@ -83,7 +83,11 @@
               rustfmt
               clippy
               rust.packages.stable.rustPlatform.rustLibSrc
+
+              # runtime deps
               postgresql_14
+
+              # developer tooling
               python3Packages.pgcli
               sqlx-cli
               websocat
