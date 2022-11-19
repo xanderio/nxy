@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use color_eyre::{eyre::eyre, Help, Report, Result, SectionExt};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::Value;
+use sqlx::PgPool;
 use tokio::process::Command;
 use tracing::instrument;
 
@@ -38,6 +39,38 @@ pub async fn list_configurations(flake_url: &str) -> Result<Vec<String>> {
     ]);
 
     json_output(cmd).await
+}
+
+#[instrument]
+pub async fn build_configuration(flake_url: &str, name: &str) -> Result<Value> {
+    let mut cmd = Command::new("nix");
+    cmd.args([
+        "build",
+        "--json",
+        "--no-link",
+        format!("{flake_url}#nixosConfigurations.{name}.config.system.build.toplevel").as_str(),
+    ]);
+
+    json_output(cmd).await
+}
+
+#[instrument(skip(pool))]
+pub async fn build_all_configurations(pool: PgPool, flake_revision_id: i64) -> Result<()> {
+    let flake_url = sqlx::query_scalar!(
+        "SELECT url FROM flake_revisions WHERE flake_revision_id = $1",
+        flake_revision_id
+    )
+    .fetch_one(&pool)
+    .await?;
+
+    let configs = list_configurations(flake_url.as_str()).await?;
+
+    for config in configs.into_iter() {
+        let flake_url = flake_url.clone();
+        tokio::spawn(async move { build_configuration(&flake_url, &config).await });
+    }
+
+    Ok(())
 }
 
 /// Executes `cmd` and parse stdout as json
