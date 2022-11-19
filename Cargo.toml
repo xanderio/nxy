@@ -62,3 +62,6 @@ console-subscriber = { version = "0.1.8", optional = true }
 lto = true
 opt-level = "s"
 codegen-units = 1
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3
