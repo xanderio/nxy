@@ -1,7 +1,7 @@
 use axum::{extract::State, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
-use crate::nix::{build_all_configurations, flake_metadata};
+use crate::nix::{flake_metadata, insert_store_paths};
 
 use super::{ApiContext, Result};
 
@@ -68,10 +68,7 @@ async fn create_flake(
     .fetch_one(&ctx.db)
     .await?;
 
-    tokio::spawn(build_all_configurations(
-        ctx.db.clone(),
-        flake.flake_revision_id,
-    ));
+    tokio::spawn(insert_store_paths(ctx.db.clone(), flake.flake_revision_id));
 
     Ok(Json(FlakeBody {
         flake: Flake {
@@ -160,7 +157,7 @@ async fn update_flake(ctx: State<ApiContext>) -> Result<()> {
         .fetch_one(&ctx.db)
         .await?;
 
-        tokio::spawn(build_all_configurations(ctx.db.clone(), flake_revision_id));
+        tokio::spawn(insert_store_paths(ctx.db.clone(), flake_revision_id));
     }
     Ok(())
 }

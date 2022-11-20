@@ -1,3 +1,5 @@
+use std::{collections::HashMap, path::PathBuf};
+
 use chrono::{DateTime, Utc};
 use color_eyre::{eyre::eyre, Help, Report, Result, SectionExt};
 use serde::{de::DeserializeOwned, Deserialize};
@@ -42,23 +44,27 @@ pub async fn list_configurations(flake_url: &str) -> Result<Vec<String>> {
 }
 
 #[instrument]
-pub async fn build_configuration(flake_url: &str, name: &str) -> Result<Value> {
-    tracing::info!("building configuration");
+pub async fn config_derivation(flake_url: &str, name: &str) -> Result<String> {
+    tracing::info!("evaluating configuration");
     let mut cmd = Command::new("nix");
     cmd.args([
-        "build",
+        "path-info",
         "--json",
-        "--no-link",
+        "--derivation",
         format!("{flake_url}#nixosConfigurations.{name}.config.system.build.toplevel").as_str(),
     ]);
 
-    let res = json_output(cmd).await;
+    #[derive(Deserialize)]
+    struct PathInfo {
+        path: String,
+    }
+    let mut res: Vec<PathInfo> = json_output(cmd).await?;
     tracing::info!("done");
-    res
+    Ok(res.pop().unwrap().path)
 }
 
 #[instrument(skip(pool))]
-pub async fn build_all_configurations(pool: PgPool, flake_revision_id: i64) -> Result<()> {
+pub async fn insert_store_paths(pool: PgPool, flake_revision_id: i64) -> Result<()> {
     let flake_url = sqlx::query_scalar!(
         "SELECT url FROM flake_revisions WHERE flake_revision_id = $1",
         flake_revision_id
@@ -68,9 +74,19 @@ pub async fn build_all_configurations(pool: PgPool, flake_revision_id: i64) -> R
 
     let configs = list_configurations(flake_url.as_str()).await?;
 
-    for config in configs.into_iter() {
-        let flake_url = flake_url.clone();
-        tokio::spawn(async move { build_configuration(&flake_url, &config).await });
+    for config in configs {
+        let drv_path = config_derivation(&flake_url, &config).await?;
+        sqlx::query!(
+            r#"
+            INSERT INTO nixos_configurations (flake_revision_id, name, path)
+            VALUES ($1, $2, $3)
+            "#,
+            flake_revision_id,
+            config,
+            drv_path
+        )
+        .execute(&pool)
+        .await?;
     }
 
     Ok(())
