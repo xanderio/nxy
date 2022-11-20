@@ -12,22 +12,6 @@
     },
     "query": "insert into agents (agent_id) values ($1)"
   },
-  "083a00d67e115aa902857f225ea69ecc8a0d99e7b44ee9ff11b781e591b2337b": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Int8",
-          "Text",
-          "Timestamptz",
-          "Text",
-          "Jsonb"
-        ]
-      }
-    },
-    "query": "\n            insert into flake_revisions (flake_id, revision, last_modified, url, metadata)\n            values ($1, $2, $3, $4, $5)\n            "
-  },
   "3bd52fe6c283e21c1c5b12f1f69114837d1552afa4efab3128242df3a4edc299": {
     "describe": {
       "columns": [
@@ -115,6 +99,30 @@
       }
     },
     "query": "SELECT url FROM flake_revisions WHERE flake_revision_id = $1"
+  },
+  "8cd2b188f73142e0f1029ed187f7671f4ed60104e5aa6028345c347ba4e8a42e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "flake_revision_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Timestamptz",
+          "Text",
+          "Jsonb"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO flake_revisions (flake_id, revision, last_modified, url, metadata)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING flake_revision_id\n            "
   },
   "901827a3edfb6b3b09676ea976461d23126921fcc6514213fadc1feaf0131475": {
     "describe": {
