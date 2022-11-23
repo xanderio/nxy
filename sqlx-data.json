@@ -12,6 +12,20 @@
     },
     "query": "insert into agents (agent_id) values ($1)"
   },
+  "16c7a74e79e8cb2927be5b2fa753567bc5799fdee7b73da12fd9d01314fe0674": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            INSERT INTO nixos_configurations (flake_revision_id, name, path)\n            VALUES ($1, $2, $3)\n            "
+  },
   "3bd52fe6c283e21c1c5b12f1f69114837d1552afa4efab3128242df3a4edc299": {
     "describe": {
       "columns": [
