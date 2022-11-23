@@ -6,6 +6,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-utils.follows = "utils";
     };
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     utils.url = "github:numtide/flake-utils";
     gitignore = {
       url = "github:hercules-ci/gitignore.nix";
@@ -13,7 +17,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, crane, gitignore, utils, ... }:
+  outputs = { self, nixpkgs, crane, fenix, gitignore, utils, ... }:
     {
       herculesCI = {
         ciSystems = [ "x86_64-linux" ];
@@ -24,7 +28,10 @@
         pkgs = import nixpkgs { inherit system; };
         inherit (gitignore.lib) gitignoreSource;
 
-        craneLib = crane.lib.${system};
+        rustToolchain = fenix.packages.${system}.stable;
+
+        craneLib = crane.lib.${system}.overrideToolchain rustToolchain.toolchain;
+
         commonArgs = {
           src = gitignoreSource ./.;
 
@@ -70,19 +77,15 @@
                 builtins.getEnv "XDG_RUNTIME_DIR";
           in
           pkgs.mkShell {
-            RUST_SRC_PATH = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
+            RUST_SRC_PATH = "${rustToolchain.rust-src}/lib/rustlib/src/rust/library";
             RUSTFLAGS = "--cfg tokio_unstable";
             PGDATA = ".pg/data";
             PGHOST = "${xdg_runtime_dir}/nxy";
             PGDATABASE = "nxy";
             DATABASE_URL = "postgres://";
+            inputsFrom = [ self.packages.${system}.nxy ];
             buildInputs = with pkgs; [
               nixUnstable
-              cargo
-              rustc
-              rustfmt
-              clippy
-              rust.packages.stable.rustPlatform.rustLibSrc
 
               # runtime deps
               postgresql_14
