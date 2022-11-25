@@ -7,7 +7,7 @@ use std::{
     sync::Arc,
 };
 
-use axum::{Router, RouterService};
+use axum::Router;
 use color_eyre::eyre::WrapErr;
 use sqlx::PgPool;
 use tower_http::trace::TraceLayer;
@@ -35,7 +35,7 @@ pub async fn serve(db: PgPool, agent_manager: Arc<AgentManager>) -> color_eyre::
         .wrap_err("error running HTTP server")
 }
 
-fn api_router(api_context: ApiContext) -> RouterService {
+fn api_router(api_context: ApiContext) -> Router<()> {
     Router::new()
         .merge(flakes::router())
         .merge(agent::router())
