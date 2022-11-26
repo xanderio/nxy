@@ -55,7 +55,7 @@ async fn connect() -> Result<(
 )> {
     let mut retry_period = Duration::from_millis(500);
     loop {
-        match connect_async("ws://localhost:8080/ws").await {
+        match connect_async("ws://localhost:8080/api/v1/agent/ws").await {
             Ok(ws) => return Ok(ws),
             Err(e) => {
                 tracing::warn!(
