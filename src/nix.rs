@@ -48,7 +48,6 @@ pub async fn config_derivation(flake_url: &str, name: &str) -> Result<String> {
     cmd.args([
         "path-info",
         "--json",
-        "--derivation",
         format!("{flake_url}#nixosConfigurations.{name}.config.system.build.toplevel").as_str(),
     ]);
 
