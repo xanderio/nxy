@@ -43,24 +43,32 @@ impl AgentManager {
 
     pub async fn add_agent(&self, agent: Agent) -> Result<()> {
         // request agent status to aquire the agent id
-        let id = agent.status().await?.id;
+        let status = agent.status().await?;
 
-        let result = sqlx::query_scalar!("select agent_id from agents where agent_id = $1", id)
-            .fetch_optional(&self.pool)
-            .await?;
+        let result =
+            sqlx::query_scalar!("select agent_id from agents where agent_id = $1", status.id)
+                .fetch_optional(&self.pool)
+                .await?;
 
         if result.is_none() {
-            tracing::info!(?id, "new agent established a connection");
-            sqlx::query!("insert into agents (agent_id) values ($1)", id)
+            tracing::info!(id = ?status.id, "new agent established a connection");
+            sqlx::query!("insert into agents (agent_id) values ($1)", status.id)
                 .execute(&self.pool)
                 .await?;
         } else {
-            tracing::info!(?id, "known agent connected");
+            tracing::info!(id = ?status.id, "known agent connected");
         }
+        sqlx::query!(
+            "update agents set current_system = $2 where agent_id = $1",
+            status.id,
+            status.system.current.to_str().unwrap()
+        )
+        .execute(&self.pool)
+        .await?;
 
         {
             let mut agents = self.agents.lock().unwrap();
-            agents.insert(id, agent);
+            agents.insert(status.id, agent);
         }
         Ok(())
     }

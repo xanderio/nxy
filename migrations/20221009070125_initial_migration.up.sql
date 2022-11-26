@@ -20,5 +20,6 @@ create table nixos_configurations (
 );
 
 create table agents (
-	agent_id uuid primary key
+	agent_id uuid primary key,
+        current_system text
 );
