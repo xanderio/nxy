@@ -1,7 +1,7 @@
 use axum::{extract::State, routing::get, Json, Router};
 use serde::{Deserialize, Serialize};
 
-use crate::nix::{flake_metadata, insert_store_paths};
+use crate::nix::{self, flake_metadata, process_configurations};
 
 use super::{ApiContext, Result};
 
@@ -68,7 +68,10 @@ async fn create_flake(
     .fetch_one(&ctx.db)
     .await?;
 
-    tokio::spawn(insert_store_paths(ctx.db.clone(), flake.flake_revision_id));
+    tokio::spawn(process_configurations(
+        ctx.db.clone(),
+        flake.flake_revision_id,
+    ));
 
     Ok(Json(FlakeBody {
         flake: Flake {
@@ -120,44 +123,6 @@ async fn get_flakes(ctx: State<ApiContext>) -> Result<Json<Vec<Flake>>> {
 }
 
 async fn update_flake(ctx: State<ApiContext>) -> Result<()> {
-    let flakes = sqlx::query!(
-        r#"
-        with last_rev as (
-            select flake_id, max(flake_revision_id) as flake_revision_id
-            from flake_revisions
-            group by flake_id
-        )
-        select flakes.flake_id, flake_url, revision, last_modified 
-        from flakes
-        join last_rev using (flake_id)
-        join flake_revisions using (flake_revision_id)
-        "#
-    )
-    .fetch_all(&ctx.db)
-    .await?;
-
-    for flake in flakes {
-        tracing::info!("updating {}", flake.flake_url);
-        let (metadata, meta) = flake_metadata(&flake.flake_url).await?;
-        if metadata.revision == flake.revision {
-            continue;
-        }
-        let flake_revision_id = sqlx::query_scalar!(
-            r#"
-            INSERT INTO flake_revisions (flake_id, revision, last_modified, url, metadata)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING flake_revision_id
-            "#,
-            flake.flake_id,
-            metadata.revision,
-            metadata.last_modified,
-            metadata.url,
-            meta
-        )
-        .fetch_one(&ctx.db)
-        .await?;
-
-        tokio::spawn(insert_store_paths(ctx.db.clone(), flake_revision_id));
-    }
+    nix::update_flakes(&ctx.db).await?;
     Ok(())
 }

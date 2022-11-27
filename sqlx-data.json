@@ -12,19 +12,26 @@
     },
     "query": "insert into agents (agent_id) values ($1)"
   },
-  "16c7a74e79e8cb2927be5b2fa753567bc5799fdee7b73da12fd9d01314fe0674": {
+  "165c6e3db988a5debb7881536b630b1067c5fc33ad957b12ba9e37a23eaaf69d": {
     "describe": {
-      "columns": [],
-      "nullable": [],
+      "columns": [
+        {
+          "name": "nixos_configuration_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        false
+      ],
       "parameters": {
         "Left": [
           "Int8",
-          "Text",
           "Text"
         ]
       }
     },
-    "query": "\n            INSERT INTO nixos_configurations (flake_revision_id, name, path)\n            VALUES ($1, $2, $3)\n            "
+    "query": "\n            SELECT nixos_configuration_id FROM nixos_configurations\n            WHERE flake_id = $1 AND name = $2\n            "
   },
   "3bd52fe6c283e21c1c5b12f1f69114837d1552afa4efab3128242df3a4edc299": {
     "describe": {
@@ -94,16 +101,58 @@
     },
     "query": "\n        with last_rev as (\n            select flake_id, max(flake_revision_id) as flake_revision_id\n            from flake_revisions\n            group by flake_id\n        )\n        select flakes.flake_id, flake_url, flake_revision_id as \"flake_revision_id!\", revision, last_modified, url\n        from flakes\n        join last_rev using (flake_id)\n        join flake_revisions using (flake_revision_id)\n        "
   },
-  "49b4d4c9ac3589e24161c3255d9c7633e1ff8c83b4790db67a962661653eca9c": {
+  "6511574c0bf23e5326ae335549bc11db0e5960f783fb9f7c672d3ac8a003c446": {
     "describe": {
       "columns": [
         {
-          "name": "url",
+          "name": "flake_id",
           "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "flake_url",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "revision",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "last_modified",
+          "ordinal": 3,
+          "type_info": "Timestamptz"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n        WITH last_rev AS (\n            SELECT flake_id, MAX(flake_revision_id) AS flake_revision_id\n            FROM flake_revisions\n            GROUP BY flake_id\n        )\n        SELECT flakes.flake_id, flake_url, revision, last_modified \n        FROM flakes\n        JOIN last_rev USING (flake_id)\n        JOIN flake_revisions USING (flake_revision_id)\n        "
+  },
+  "6ef91119dff3cd34d85881a28a59e28c4350b4651d63b50be11051aac0aaa8da": {
+    "describe": {
+      "columns": [
+        {
+          "name": "flake_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "url",
+          "ordinal": 1,
           "type_info": "Text"
         }
       ],
       "nullable": [
+        false,
         false
       ],
       "parameters": {
@@ -112,7 +161,7 @@
         ]
       }
     },
-    "query": "SELECT url FROM flake_revisions WHERE flake_revision_id = $1"
+    "query": "SELECT flake_id, url FROM flake_revisions WHERE flake_revision_id = $1"
   },
   "8cd2b188f73142e0f1029ed187f7671f4ed60104e5aa6028345c347ba4e8a42e": {
     "describe": {
@@ -192,40 +241,52 @@
     },
     "query": "\n            with inserted_flake as (\n                insert into flakes (flake_url)\n                values ($1)\n                returning flake_id, flake_url\n            ), inserted_revision as (\n                insert into flake_revisions (flake_id, revision, last_modified, url, metadata)\n                select flake_id, $2, $3, $4, $5\n                from inserted_flake\n                returning flake_revision_id, revision, last_modified, url\n            )\n            select flake_id, flake_url, flake_revision_id, revision, last_modified, url\n            from inserted_flake, inserted_revision\n        "
   },
-  "b852724fcc7c59860c7ba547e4a660bc3d3f43591a43ec939edbc2c16f25152b": {
+  "bc071afcbbc3d4c41e8aaa90145ae531a55214e15c0f996461aef3ecf60ff824": {
     "describe": {
       "columns": [
         {
-          "name": "flake_id",
+          "name": "nixos_configuration_id",
           "ordinal": 0,
           "type_info": "Int8"
-        },
-        {
-          "name": "flake_url",
-          "ordinal": 1,
-          "type_info": "Text"
-        },
-        {
-          "name": "revision",
-          "ordinal": 2,
-          "type_info": "Text"
-        },
-        {
-          "name": "last_modified",
-          "ordinal": 3,
-          "type_info": "Timestamptz"
         }
       ],
       "nullable": [
-        false,
-        false,
-        false,
         false
       ],
       "parameters": {
-        "Left": []
+        "Left": [
+          "Int8",
+          "Text"
+        ]
       }
     },
-    "query": "\n        with last_rev as (\n            select flake_id, max(flake_revision_id) as flake_revision_id\n            from flake_revisions\n            group by flake_id\n        )\n        select flakes.flake_id, flake_url, revision, last_modified \n        from flakes\n        join last_rev using (flake_id)\n        join flake_revisions using (flake_revision_id)\n        "
+    "query": "\n        INSERT INTO nixos_configurations (flake_id, name)\n        VALUES ($1, $2) \n        ON CONFLICT DO NOTHING\n        RETURNING nixos_configuration_id\n        "
+  },
+  "c591ba80c33c36015e66b3b02373b3ad853e64e032278ae4db76f4e15502570e": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "update agents set current_system = $2 where agent_id = $1"
+  },
+  "ffc37a9ec8bf0c7560f5d30d3c0cca8ad263f0a62a7b8ad8fe8249e6e528a54a": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n        INSERT INTO nixos_configuration_evaluations (flake_revision_id, nixos_configuration_id, store_path)\n        VALUES ($1, $2, $3) \n        "
   }
 }
