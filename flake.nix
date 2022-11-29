@@ -13,11 +13,6 @@
   };
 
   outputs = { self, nixpkgs, cargo2nix, fenix, utils, ... }:
-    {
-      herculesCI = {
-        ciSystems = [ "x86_64-linux" ];
-      };
-    } //
     utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
