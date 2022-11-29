@@ -46,20 +46,20 @@ impl AgentManager {
         let status = agent.status().await?;
 
         let result =
-            sqlx::query_scalar!("select agent_id from agents where agent_id = $1", status.id)
+            sqlx::query_scalar!("SELECT agent_id FROM agents WHERE agent_id = $1", status.id)
                 .fetch_optional(&self.pool)
                 .await?;
 
         if result.is_none() {
             tracing::info!(id = ?status.id, "new agent established a connection");
-            sqlx::query!("insert into agents (agent_id) values ($1)", status.id)
+            sqlx::query!("INSERT INTO agents (agent_id) VALUES ($1)", status.id)
                 .execute(&self.pool)
                 .await?;
         } else {
             tracing::info!(id = ?status.id, "known agent connected");
         }
         sqlx::query!(
-            "update agents set current_system = $2 where agent_id = $1",
+            "UPDATE agents SET current_system = $2 WHERE agent_id = $1",
             status.id,
             status.system.current.to_str().unwrap()
         )

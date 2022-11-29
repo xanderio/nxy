@@ -1,34 +1,34 @@
-create table flakes (
-        flake_id bigint generated always as identity primary key,
-        flake_url text not null unique
+CREATE TABLE flakes (
+        flake_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+        flake_url TEXT NOT NULL UNIQUE
 );
 
-create table flake_revisions (
-	flake_revision_id bigint generated always as identity primary key,
-	flake_id bigint references flakes NOT NULL,
-        revision text not null, 
-        last_modified timestamp with time zone not null,
-        url text not null,
-        metadata jsonb not null
+CREATE TABLE flake_revisions (
+	flake_revision_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	flake_id BIGINT REFERENCES flakes NOT NULL,
+        revision TEXT NOT NULL, 
+        last_modified TIMESTAMP WITH TIME ZONE NOT NULL,
+        url TEXT NOT NULL,
+        metadata JSONB NOT NULL
 );
 
-create table nixos_configurations (
-	nixos_configuration_id bigint generated always as identity primary key,
-	flake_id bigint not null references flakes,
-	name text not null,
+CREATE TABLE nixos_configurations (
+	nixos_configuration_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+	flake_id BIGINT NOT NULL REFERENCES flakes,
+	name TEXT NOT NULL,
 
-        unique (flake_id, name)
+        UNIQUE (flake_id, name)
 );
 
-create table nixos_configuration_evaluations (
-	flake_revision_id bigint references flake_revisions, 
-	nixos_configuration_id bigint references nixos_configurations,
-	store_path text not null,
+CREATE TABLE nixos_configuration_evaluations (
+	flake_revision_id BIGINT REFERENCES flake_revisions, 
+	nixos_configuration_id BIGINT REFERENCES nixos_configurations,
+	store_path TEXT NOT NULL,
 
-	primary key (flake_revision_id, nixos_configuration_id)
+	PRIMARY KEY (flake_revision_id, nixos_configuration_id)
 );
 
-create table agents (
-	agent_id uuid primary key,
-        current_system text
+CREATE TABLE agents (
+	agent_id UUID PRIMARY KEY,
+        current_system TEXT
 );

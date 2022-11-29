@@ -46,18 +46,18 @@ async fn create_flake(
 
     let flake = sqlx::query!(
         r#"
-            with inserted_flake as (
-                insert into flakes (flake_url)
-                values ($1)
-                returning flake_id, flake_url
-            ), inserted_revision as (
-                insert into flake_revisions (flake_id, revision, last_modified, url, metadata)
-                select flake_id, $2, $3, $4, $5
-                from inserted_flake
-                returning flake_revision_id, revision, last_modified, url
+            WITH inserted_flake AS (
+                INSERT INTO flakes (flake_url)
+                VALUES ($1)
+                RETURNING flake_id, flake_url
+            ), inserted_revision AS (
+                INSERT INTO flake_revisions (flake_id, revision, last_modified, url, metadata)
+                SELECT flake_id, $2, $3, $4, $5
+                FROM inserted_flake
+                RETURNING flake_revision_id, revision, last_modified, url
             )
-            select flake_id, flake_url, flake_revision_id, revision, last_modified, url
-            from inserted_flake, inserted_revision
+            SELECT flake_id, flake_url, flake_revision_id, revision, last_modified, url
+            FROM inserted_flake, inserted_revision
         "#,
         req.flake.flake_url,
         metadata.revision,
@@ -90,15 +90,15 @@ async fn create_flake(
 async fn get_flakes(ctx: State<ApiContext>) -> Result<Json<Vec<Flake>>> {
     let flakes = sqlx::query!(
         r#"
-        with last_rev as (
-            select flake_id, max(flake_revision_id) as flake_revision_id
-            from flake_revisions
-            group by flake_id
+        WITH last_rev AS (
+            SELECT flake_id, MAX(flake_revision_id) as flake_revision_id
+            FROM flake_revisions
+            GROUP BY flake_id
         )
-        select flakes.flake_id, flake_url, flake_revision_id as "flake_revision_id!", revision, last_modified, url
-        from flakes
-        join last_rev using (flake_id)
-        join flake_revisions using (flake_revision_id)
+        SELECT flakes.flake_id, flake_url, flake_revision_id AS "flake_revision_id!", revision, last_modified, url
+        FROM flakes
+        JOIN last_rev USING (flake_id)
+        JOIN flake_revisions USING (flake_revision_id)
         "#,
     )
     .fetch_all(&ctx.db).await?

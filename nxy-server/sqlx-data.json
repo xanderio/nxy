@@ -1,17 +1,5 @@
 {
   "db": "PostgreSQL",
-  "02ccdd5994dc03a27d8ab60d769410589dd9f1f3286245a039076ff43e572485": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "insert into agents (agent_id) values ($1)"
-  },
   "165c6e3db988a5debb7881536b630b1067c5fc33ad957b12ba9e37a23eaaf69d": {
     "describe": {
       "columns": [
@@ -33,27 +21,7 @@
     },
     "query": "\n            SELECT nixos_configuration_id FROM nixos_configurations\n            WHERE flake_id = $1 AND name = $2\n            "
   },
-  "3bd52fe6c283e21c1c5b12f1f69114837d1552afa4efab3128242df3a4edc299": {
-    "describe": {
-      "columns": [
-        {
-          "name": "agent_id",
-          "ordinal": 0,
-          "type_info": "Uuid"
-        }
-      ],
-      "nullable": [
-        false
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      }
-    },
-    "query": "select agent_id from agents where agent_id = $1"
-  },
-  "47fc82cbeae563a394bf44aabc53ac7f13ee5fc6dc697ca78b1ce981564c2736": {
+  "38857dae16cc197447bb70b46740597bff095c2cdc5f1edb90ddf358e4d657d9": {
     "describe": {
       "columns": [
         {
@@ -99,7 +67,39 @@
         "Left": []
       }
     },
-    "query": "\n        with last_rev as (\n            select flake_id, max(flake_revision_id) as flake_revision_id\n            from flake_revisions\n            group by flake_id\n        )\n        select flakes.flake_id, flake_url, flake_revision_id as \"flake_revision_id!\", revision, last_modified, url\n        from flakes\n        join last_rev using (flake_id)\n        join flake_revisions using (flake_revision_id)\n        "
+    "query": "\n        WITH last_rev AS (\n            SELECT flake_id, MAX(flake_revision_id) as flake_revision_id\n            FROM flake_revisions\n            GROUP BY flake_id\n        )\n        SELECT flakes.flake_id, flake_url, flake_revision_id AS \"flake_revision_id!\", revision, last_modified, url\n        FROM flakes\n        JOIN last_rev USING (flake_id)\n        JOIN flake_revisions USING (flake_revision_id)\n        "
+  },
+  "525cecba9eec520f3527fc8cceb2e10099c3c8f9a3f498c396569b53b0c733bc": {
+    "describe": {
+      "columns": [
+        {
+          "name": "agent_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "SELECT agent_id FROM agents WHERE agent_id = $1"
+  },
+  "5ba79907a269292fbe0eb0c2d956671ad5a0d64379b86f408ee0cbe32408b643": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "INSERT INTO agents (agent_id) VALUES ($1)"
   },
   "6511574c0bf23e5326ae335549bc11db0e5960f783fb9f7c672d3ac8a003c446": {
     "describe": {
@@ -187,7 +187,7 @@
     },
     "query": "\n            INSERT INTO flake_revisions (flake_id, revision, last_modified, url, metadata)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING flake_revision_id\n            "
   },
-  "901827a3edfb6b3b09676ea976461d23126921fcc6514213fadc1feaf0131475": {
+  "8cea978f35c47b03633e859dc0af5ca5a42e7e4907ee52e6e50f1e33576d4286": {
     "describe": {
       "columns": [
         {
@@ -239,7 +239,7 @@
         ]
       }
     },
-    "query": "\n            with inserted_flake as (\n                insert into flakes (flake_url)\n                values ($1)\n                returning flake_id, flake_url\n            ), inserted_revision as (\n                insert into flake_revisions (flake_id, revision, last_modified, url, metadata)\n                select flake_id, $2, $3, $4, $5\n                from inserted_flake\n                returning flake_revision_id, revision, last_modified, url\n            )\n            select flake_id, flake_url, flake_revision_id, revision, last_modified, url\n            from inserted_flake, inserted_revision\n        "
+    "query": "\n            WITH inserted_flake AS (\n                INSERT INTO flakes (flake_url)\n                VALUES ($1)\n                RETURNING flake_id, flake_url\n            ), inserted_revision AS (\n                INSERT INTO flake_revisions (flake_id, revision, last_modified, url, metadata)\n                SELECT flake_id, $2, $3, $4, $5\n                FROM inserted_flake\n                RETURNING flake_revision_id, revision, last_modified, url\n            )\n            SELECT flake_id, flake_url, flake_revision_id, revision, last_modified, url\n            FROM inserted_flake, inserted_revision\n        "
   },
   "bc071afcbbc3d4c41e8aaa90145ae531a55214e15c0f996461aef3ecf60ff824": {
     "describe": {
@@ -261,6 +261,19 @@
       }
     },
     "query": "\n        INSERT INTO nixos_configurations (flake_id, name)\n        VALUES ($1, $2) \n        ON CONFLICT DO NOTHING\n        RETURNING nixos_configuration_id\n        "
+  },
+  "bf0578d1daa6da7d9de4a9d2346120346a3486a8a97c79c6d23620fb35626959": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "UPDATE agents SET current_system = $2 WHERE agent_id = $1"
   },
   "c349957ed7fc9d9475a79a71897f420049879de471da3f50a868f5831833e5b4": {
     "describe": {
@@ -285,19 +298,6 @@
       }
     },
     "query": "SELECT agent_id, current_system FROM agents"
-  },
-  "c591ba80c33c36015e66b3b02373b3ad853e64e032278ae4db76f4e15502570e": {
-    "describe": {
-      "columns": [],
-      "nullable": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Text"
-        ]
-      }
-    },
-    "query": "update agents set current_system = $2 where agent_id = $1"
   },
   "ffc37a9ec8bf0c7560f5d30d3c0cca8ad263f0a62a7b8ad8fe8249e6e528a54a": {
     "describe": {
