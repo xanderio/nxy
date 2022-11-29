@@ -262,6 +262,30 @@
     },
     "query": "\n        INSERT INTO nixos_configurations (flake_id, name)\n        VALUES ($1, $2) \n        ON CONFLICT DO NOTHING\n        RETURNING nixos_configuration_id\n        "
   },
+  "c349957ed7fc9d9475a79a71897f420049879de471da3f50a868f5831833e5b4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "agent_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "current_system",
+          "ordinal": 1,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT agent_id, current_system FROM agents"
+  },
   "c591ba80c33c36015e66b3b02373b3ad853e64e032278ae4db76f4e15502570e": {
     "describe": {
       "columns": [],
