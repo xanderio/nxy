@@ -56,18 +56,6 @@
           default = nxy;
         };
 
-        apps = rec {
-          nxy = {
-            type = "app";
-            program = "${self.packages."${system}".nxy}/bin/nxy";
-          };
-          nxy-agent = {
-            type = "app";
-            program = "${self.packages."${system}".nxy-agent}/bin/agent";
-          };
-          default = nxy;
-        };
-
         devShells.default =
           let
             xdg_runtime_dir =
