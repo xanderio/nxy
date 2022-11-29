@@ -7,6 +7,7 @@ args@{
     "nxy-agent/default"
     "nxy-rpc/default"
     "nxy-server/default"
+    "nxy-cli/default"
   ],
   rustPackages,
   buildRustPackages,
@@ -25,7 +26,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "fc1871e6cb13d99ae6d9d8eceffb6c52674414a000db6eff47ef58d8370bb541";
+  nixifiedLockHash = "3ea8ca63f0c4cb18e9635d68dcf99712485fbd7de9c0bda1eb4e6c553a5d9c11";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -52,6 +53,7 @@ in
     nxy-agent = rustPackages.unknown.nxy-agent."0.1.0";
     nxy-rpc = rustPackages.unknown.nxy-rpc."0.1.0";
     nxy-server = rustPackages.unknown.nxy-server."0.1.0";
+    nxy-cli = rustPackages.unknown.nxy-cli."0.1.0";
   };
   "registry+https://github.com/rust-lang/crates.io-index".addr2line."0.17.0" = overridableMkRustCrate (profileName: rec {
     name = "addr2line";
@@ -1312,6 +1314,13 @@ in
       tracing_subscriber = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".tracing-subscriber."0.3.16" { inherit profileName; }).out;
       uuid = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".uuid."1.2.2" { inherit profileName; }).out;
     };
+  });
+  
+  "unknown".nxy-cli."0.1.0" = overridableMkRustCrate (profileName: rec {
+    name = "nxy-cli";
+    version = "0.1.0";
+    registry = "unknown";
+    src = fetchCrateLocal (workspaceSrc + "/nxy-cli");
   });
   
   "unknown".nxy-rpc."0.1.0" = overridableMkRustCrate (profileName: rec {
