@@ -1077,30 +1077,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nxy"
-version = "0.1.0"
-dependencies = [
- "axum",
- "chrono",
- "color-eyre",
- "console-subscriber",
- "futures-util",
- "hyper",
- "nxy-rpc",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror",
- "tokio",
- "tower",
- "tower-http",
- "tracing",
- "tracing-error",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
 name = "nxy-agent"
 version = "0.1.0"
 dependencies = [
@@ -1125,6 +1101,30 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+ "uuid",
+]
+
+[[package]]
+name = "nxy-server"
+version = "0.1.0"
+dependencies = [
+ "axum",
+ "chrono",
+ "color-eyre",
+ "console-subscriber",
+ "futures-util",
+ "hyper",
+ "nxy-rpc",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-error",
+ "tracing-subscriber",
  "uuid",
 ]
 

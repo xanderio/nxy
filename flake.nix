@@ -37,10 +37,10 @@
       in
       {
         packages = rec {
-          nxy = rustPkgs.workspace.nxy { };
+          nxy-server = rustPkgs.workspace.nxy-server { };
           nxy-agent = rustPkgs.workspace.nxy-agent { };
 
-          default = nxy;
+          default = nxy-server;
         };
 
         devShells.default =

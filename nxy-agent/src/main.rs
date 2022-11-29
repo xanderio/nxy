@@ -8,7 +8,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use tracing::instrument;
 
-use rpc::{JsonRPC, Request, Response};
+use nxy_rpc::{JsonRPC, Request, Response};
 
 mod handler;
 mod state;
@@ -51,7 +51,7 @@ async fn run() -> Result<()> {
 
 async fn connect() -> Result<(
     WebSocketStream<MaybeTlsStream<TcpStream>>,
-    tokio_tungstenite::tungstenite::http::Response<()>,
+    tokio_tungstenite::tungstenite::http::Response<Option<Vec<u8>>>,
 )> {
     let mut retry_period = Duration::from_millis(500);
     loop {

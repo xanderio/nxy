@@ -1,7 +1,7 @@
 use std::{io, path::PathBuf};
 
 use color_eyre::Result;
-use rpc::{
+use nxy_rpc::{
     types::{Status, System},
     ErrorCode, Request, Response,
 };

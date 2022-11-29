@@ -1,5 +1,5 @@
 use color_eyre::{eyre::Context, Result};
-use nxy::agent::AgentManager;
+use nxy_server::agent::AgentManager;
 use sqlx::postgres::PgPoolOptions;
 use tracing::subscriber::Subscriber;
 use tracing_subscriber::Layer;
@@ -15,7 +15,7 @@ async fn main() -> Result<()> {
 
     let agent_manager = AgentManager::start(pool.clone()).await;
 
-    nxy::http::serve(pool, agent_manager).await
+    nxy_server::http::serve(pool, agent_manager).await
 }
 
 fn install_tracing() {
