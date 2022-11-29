@@ -43,7 +43,7 @@
       {
         packages = rec {
           nxy = rustPkgs.workspace.nxy { };
-          nxy-agent = rustPkgs.workspace.agent { };
+          nxy-agent = rustPkgs.workspace.nxy-agent { };
 
           default = nxy;
         };
