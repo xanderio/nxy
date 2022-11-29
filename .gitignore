@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 .direnv
-/target
+target
 result*
 /examples/system/bare-system.qcow2
 .pg
