@@ -1,23 +1,18 @@
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    crane = {
-      url = "github:ipetkov/crane";
+    cargo2nix = {
+      url = "github:cargo2nix/cargo2nix/unstable";
       inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "utils";
     };
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     utils.url = "github:numtide/flake-utils";
-    gitignore = {
-      url = "github:hercules-ci/gitignore.nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, crane, fenix, gitignore, utils, ... }:
+  outputs = { self, nixpkgs, cargo2nix, fenix, utils, ... }:
     {
       herculesCI = {
         ciSystems = [ "x86_64-linux" ];
@@ -25,33 +20,30 @@
     } //
     utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
-        inherit (gitignore.lib) gitignoreSource;
-
-        rustToolchain = fenix.packages.${system}.stable;
-
-        craneLib = crane.lib.${system}.overrideToolchain rustToolchain.toolchain;
-
-        commonArgs = {
-          src = gitignoreSource ./.;
-
-          # enable unstable tokio `tracing` feature
-          RUSTFLAGS = "--cfg tokio_unstable";
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ cargo2nix.overlays.default ];
         };
 
-        cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+        rustToolchain = fenix.packages."${system}".stable.toolchain;
 
+        rustPkgs = pkgs.rustBuilder.makePackageSet {
+          inherit rustToolchain;
+          packageFun = import ./Cargo.nix;
+          packageOverrides = pkgs: pkgs.rustBuilder.overrides.all ++ [
+            (pkgs.rustBuilder.rustLib.makeOverride {
+              name = "tokio";
+              overrideAttrs = drv: {
+                rustcflags = drv.rustcflags or [ ] ++ [ "--cfg" "tokio_unstable" ];
+              };
+            })
+          ];
+        };
       in
       {
         packages = rec {
-          nxy = craneLib.buildPackage (commonArgs // {
-            inherit cargoArtifacts;
-          });
-
-          nxy-agent = craneLib.buildPackage (commonArgs // {
-            inherit cargoArtifacts;
-            cargoEtraArgs = "--package agent";
-          } // craneLib.crateNameFromCargoToml { cargoToml = ./crates/agent/Cargo.toml; });
+          nxy = rustPkgs.workspace.nxy { };
+          nxy-agent = rustPkgs.workspace.agent { };
 
           default = nxy;
         };
@@ -64,15 +56,15 @@
               else
                 builtins.getEnv "XDG_RUNTIME_DIR";
           in
-          pkgs.mkShell {
-            RUST_SRC_PATH = "${rustToolchain.rust-src}/lib/rustlib/src/rust/library";
+          rustPkgs.workspaceShell {
             RUSTFLAGS = "--cfg tokio_unstable";
+
             PGDATA = ".pg/data";
             PGHOST = "${xdg_runtime_dir}/nxy";
             PGDATABASE = "nxy";
             DATABASE_URL = "postgres://";
-            inputsFrom = [ self.packages.${system}.nxy ];
-            buildInputs = with pkgs; [
+
+            nativeBuildInputs = with pkgs; [
               nixUnstable
 
               # runtime deps
