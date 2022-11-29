@@ -1,0 +1,67 @@
+[workspace]
+members = ["crates/*"]
+
+[package]
+name = "nxy"
+version = "0.1.0"
+authors = ["Alexander Sieg <alex@xanderio.de>"]
+edition = "2021"
+
+[[bin]]
+name = "nxy"
+
+[[bin]]
+name = "nxyd"
+
+[features]
+default = []
+tokio-console = ["console-subscriber"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+color-eyre = "0.6.2"
+serde = { version = "1.0.147", features = ["derive"] }
+serde_json = "1.0.89"
+tokio = { version = "1.22.0", features = [
+        "process",
+        "macros",
+        "sync",
+        "rt-multi-thread",
+        "fs",
+        "time",
+        "tracing",
+] }
+tracing = "0.1.37"
+tracing-error = "0.2.0"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+
+rpc = { path = "crates/rpc" }
+sqlx = { version = "0.6.2", features = [
+        "runtime-tokio-rustls",
+        "postgres",
+        "offline",
+        "macros",
+        "migrate",
+        "json",
+        "chrono",
+        "uuid",
+] }
+chrono = { version = "0.4.23", features = ["serde"] }
+futures-util = "0.3.25"
+axum = { version = "0.6.1", features = ["ws", "headers", "macros"] }
+hyper = { version = "0.14.23", features = [] }
+tower = "0.4.13"
+tower-http = { version = "0.3.4", features = ["trace"] }
+uuid = "1.2.2"
+thiserror = "1.0.37"
+
+console-subscriber = { version = "0.1.8", optional = true }
+
+[profile.release]
+lto = true
+opt-level = "s"
+codegen-units = 1
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3
