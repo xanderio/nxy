@@ -8,6 +8,11 @@ pub(crate) struct Args {
 
 #[derive(Subcommand)]
 pub(crate) enum Action {
+    /// interact with nxy flakes
+    Flakes {
+        #[command(subcommand)]
+        action: FlakeAction,
+    },
     /// interact with nxy agents
     Agents {
         #[command(subcommand)]
@@ -19,4 +24,14 @@ pub(crate) enum Action {
 pub(crate) enum AgentAction {
     /// List all agents
     List,
+}
+
+#[derive(Subcommand)]
+pub(crate) enum FlakeAction {
+    /// List all flakes
+    List,
+    Add {
+        /// flake uri to add to nxy
+        flake_url: String,
+    },
 }
