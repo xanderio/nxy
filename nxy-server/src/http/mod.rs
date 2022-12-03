@@ -1,6 +1,7 @@
 mod agent;
 mod error;
 mod flakes;
+mod nixos_configuration;
 
 use std::{
     net::{Ipv4Addr, SocketAddr},
@@ -40,6 +41,7 @@ fn api_router(api_context: ApiContext) -> Router<()> {
     Router::new()
         .merge(flakes::router())
         .merge(agent::router())
+        .merge(nixos_configuration::router())
         // Enable logging. Use `RUST_LOG=tower_http=debug`
         .layer(TraceLayer::new_for_http())
         .with_state(api_context)

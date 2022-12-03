@@ -299,6 +299,42 @@
     },
     "query": "SELECT agent_id, current_system FROM agents"
   },
+  "d25175d9850f9b2b2b6c1a6de19288da29124d9e380974b6b7ea8deb853c4c2d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "flake_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "flake_url",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "nixos_configuration_id",
+          "ordinal": 2,
+          "type_info": "Int8"
+        },
+        {
+          "name": "name",
+          "ordinal": 3,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT flake_id, flake_url, nixos_configuration_id, name\n         FROM nixos_configurations \n         JOIN flakes USING (flake_id)"
+  },
   "ffc37a9ec8bf0c7560f5d30d3c0cca8ad263f0a62a7b8ad8fe8249e6e528a54a": {
     "describe": {
       "columns": [],
