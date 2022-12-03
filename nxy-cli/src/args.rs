@@ -18,6 +18,11 @@ pub(crate) enum Action {
         #[command(subcommand)]
         action: AgentAction,
     },
+    /// interact with nixos configurations
+    Configs {
+        #[command(subcommand)]
+        action: ConfigsAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -34,4 +39,10 @@ pub(crate) enum FlakeAction {
         /// flake uri to add to nxy
         flake_url: String,
     },
+}
+
+#[derive(Subcommand)]
+pub(crate) enum ConfigsAction {
+    /// List all configs
+    List,
 }

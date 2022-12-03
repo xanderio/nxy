@@ -16,6 +16,7 @@ fn main() -> Result<()> {
     match args.action {
         Action::Agents { action } => handle_agent(action),
         Action::Flakes { action } => handle_flake(action),
+        Action::Configs { action } => handle_config(action),
     }
 }
 
@@ -29,6 +30,12 @@ fn handle_flake(action: FlakeAction) -> Result<()> {
 fn handle_agent(action: AgentAction) -> Result<()> {
     match action {
         AgentAction::List => list_agents(),
+    }
+}
+
+fn handle_config(action: ConfigsAction) -> Result<()> {
+    match action {
+        ConfigsAction::List => list_configs(),
     }
 }
 
@@ -92,5 +99,23 @@ fn add_flake(flake_url: String) -> Result<()> {
             "flake_url": flake_url
         }
     }))?;
+    Ok(())
+}
+
+#[derive(Deserialize, Tabled)]
+struct Config {
+    #[tabled(rename = "flake url")]
+    flake_url: String,
+    name: String,
+}
+
+fn list_configs() -> Result<()> {
+    let configs: Vec<Config> = ureq::get("http://localhost:8080/api/v1/configuration")
+        .call()?
+        .into_json()?;
+
+    let table = Table::new(configs).with(Style::rounded()).to_string();
+    println!("{table}");
+
     Ok(())
 }
