@@ -13,7 +13,7 @@ tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 
 nxy-rpc = { path = "../nxy-rpc" }
-tokio = { version = "1.22.0", features = ["rt-multi-thread", "macros", "fs", "time"] }
+tokio = { version = "1.23.0", features = ["rt-multi-thread", "macros", "fs", "time"] }
 tracing-error = "0.2.0"
 serde_json = "1.0.89"
 uuid = { version = "1.2.2", features = ["v4", "serde"] }
