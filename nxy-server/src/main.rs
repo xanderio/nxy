@@ -1,6 +1,6 @@
 use color_eyre::{eyre::Context, Result};
 use nxy_server::agent::AgentManager;
-use sqlx::postgres::PgPoolOptions;
+use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use tracing::subscriber::Subscriber;
 use tracing_subscriber::Layer;
 
@@ -9,8 +9,8 @@ async fn main() -> Result<()> {
     install_tracing();
     color_eyre::install()?;
 
-    let database_url = std::env::var("DATABASE_URL").wrap_err("DATABASE_URL unset")?;
-    let pool = PgPoolOptions::new().connect(&database_url).await?;
+    let options = PgConnectOptions::new_without_pgpass();
+    let pool = PgPoolOptions::new().connect_with(options).await?;
     sqlx::migrate!().run(&pool).await?;
 
     let agent_manager = AgentManager::start(pool.clone()).await;

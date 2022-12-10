@@ -10,6 +10,7 @@ use tracing::instrument;
 
 use nxy_rpc::{JsonRPC, Request, Response};
 
+mod activate;
 mod handler;
 mod state;
 
@@ -27,12 +28,16 @@ async fn main() -> Result<()> {
     install_tracing();
     color_eyre::install()?;
 
-    run().await
+    let server_url = std::env::args()
+        .nth(1)
+        .expect("first argument must be server address eg. ws://localhost:8080");
+
+    run(&server_url).await
 }
 
-async fn run() -> Result<()> {
+async fn run(server_url: &str) -> Result<()> {
     loop {
-        let (mut ws, _) = connect().await?;
+        let (mut ws, _) = connect(server_url).await?;
         while let Ok(Some(msg)) = ws.try_next().await {
             let rpc: JsonRPC = msg.into_text()?.parse()?;
             match rpc {
@@ -49,13 +54,15 @@ async fn run() -> Result<()> {
     }
 }
 
-async fn connect() -> Result<(
+async fn connect(
+    server_url: &str,
+) -> Result<(
     WebSocketStream<MaybeTlsStream<TcpStream>>,
     tokio_tungstenite::tungstenite::http::Response<Option<Vec<u8>>>,
 )> {
     let mut retry_period = Duration::from_millis(500);
     loop {
-        match connect_async("ws://localhost:8080/api/v1/agent/ws").await {
+        match connect_async(format!("{server_url}/api/v1/agent/ws")).await {
             Ok(ws) => return Ok(ws),
             Err(e) => {
                 tracing::warn!(
