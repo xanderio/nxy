@@ -65,8 +65,6 @@
               DATABASE_URL = "postgres://";
 
               nativeBuildInputs = with pkgs; [
-                nixUnstable
-
                 # runtime deps
                 postgresql_14
 
