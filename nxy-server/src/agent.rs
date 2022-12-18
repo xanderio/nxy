@@ -69,6 +69,9 @@ impl AgentManager {
         .execute(&self.pool)
         .await?;
 
+        //XXX: this is a hack and should be replaced with something better.
+        match_agent_to_configuration(self.pool.clone()).await?;
+
         {
             let mut agents = self.agents.lock().unwrap();
             agents.insert(status.id, agent);
@@ -176,4 +179,20 @@ impl Agent {
                 .and_then(|v| serde_json::from_value(v).map_err(Into::into))
         }
     }
+}
+
+/// Try to assign agents a nixos configuration based the store path of the current system
+/// (`/run/current-system`).
+async fn match_agent_to_configuration(pool: PgPool) -> Result<()> {
+    sqlx::query!(
+        "UPDATE agents SET nixos_configuration_id = (
+            SELECT e.nixos_configuration_id 
+                FROM nixos_configuration_evaluations AS e 
+            WHERE agents.current_system = e.store_path)
+        WHERE agents.nixos_configuration_id IS NULL"
+    )
+    .execute(&pool)
+    .await?;
+
+    Ok(())
 }
