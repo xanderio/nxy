@@ -9,20 +9,15 @@
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    utils.url = "github:numtide/flake-utils";
+    flake-parts.url = "github:hercules-ci/flake-parts";
   };
 
-  outputs = { self, nixpkgs, cargo2nix, fenix, utils, ... }:
-    utils.lib.eachDefaultSystem
-      (system:
+  outputs = { self, flake-parts, ... }@inputs:
+    flake-parts.lib.mkFlake { inherit self; } {
+      systems = [ "x86_64-linux" ];
+      perSystem = { pkgs, system, inputs', ... }:
         let
-          pkgs = import nixpkgs {
-            inherit system;
-            overlays = [ cargo2nix.overlays.default ];
-          };
-
-          rustToolchain = fenix.packages."${system}".stable.toolchain;
-
+          rustToolchain = inputs'.fenix.packages.stable.toolchain;
           rustPkgs = pkgs.rustBuilder.makePackageSet {
             inherit rustToolchain;
             packageFun = import ./Cargo.nix;
@@ -35,8 +30,14 @@
               })
             ];
           };
+
         in
         {
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = [ inputs.cargo2nix.overlays.default ];
+          };
+
           packages = rec {
             nxy-server = rustPkgs.workspace.nxy-server { };
             nxy-agent = rustPkgs.workspace.nxy-agent { };
@@ -47,7 +48,7 @@
 
           checks = import ./checks { inherit self pkgs; };
 
-          devShells. default =
+          devShells.default =
             let
               xdg_runtime_dir =
                 if builtins.getEnv "XDG_RUNTIME_DIR" == "" then
@@ -88,17 +89,20 @@
                 fi
               '';
             };
-        }) // {
-      overlays.default = final: prev:
-        let
-          inherit (final.stdenv) system;
-        in
-        {
-          inherit (self.packages.${system}) nxy-agent nxy-server nxy-cli;
         };
-      nixosModules = {
-        agent = import ./modules/agent.nix self;
-        server = import ./modules/server.nix self;
+
+      flake = {
+        overlays.default = final: prev:
+          let
+            inherit (final.stdenv) system;
+          in
+          {
+            inherit (self.packages.${system}) nxy-agent nxy-server nxy-cli;
+          };
+        nixosModules = {
+          agent = import ./modules/agent.nix self;
+          server = import ./modules/server.nix self;
+        };
       };
     };
 }
