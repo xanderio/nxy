@@ -88,8 +88,8 @@ fn backoff(duration: Duration) -> Duration {
 async fn handle_request(request: Request) -> Result<Response> {
     tracing::debug!("start processing request");
     let response = match request.method.as_str() {
-        "ping" => handler::ping(&request),
-        "status" => handler::status(&request).await,
+        "$/ping" => handler::ping(&request),
+        "$/status" => handler::status(&request).await,
         _ => handler::unknown(&request),
     };
     tracing::debug!("done processing request");

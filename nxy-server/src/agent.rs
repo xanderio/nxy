@@ -155,7 +155,7 @@ impl Agent {
     }
 
     pub async fn ping(&self) -> Result<()> {
-        let res = self.send_request("ping", ()).await.await?;
+        let res = self.send_request("$/ping", ()).await.await?;
         if let Some(error) = res.error {
             Err(eyre!("request error: {:?}", error))
         } else {
@@ -164,7 +164,7 @@ impl Agent {
     }
 
     pub async fn status(&self) -> Result<Status> {
-        let res = self.send_request("status", ()).await.await?;
+        let res = self.send_request("$/status", ()).await.await?;
         if let Some(error) = res.error {
             Err(eyre!("request error: {:?}", error))
         } else {
