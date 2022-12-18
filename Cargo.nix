@@ -5,7 +5,7 @@ args@{
   release ? true,
   rootFeatures ? [
     "nxy-agent/default"
-    "nxy-rpc/default"
+    "nxy-common/default"
     "nxy-server/default"
     "nxy-cli/default"
   ],
@@ -26,7 +26,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "11234f5f7985e1bb8023511f7a4bbc2a65d5232c26c498b09fff703b414cbc3a";
+  nixifiedLockHash = "6b006057b40f017696c4c5c9d050e036ef8c9058bc95c6b4dc5dde765428f893";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -51,7 +51,7 @@ in
   cargo2nixVersion = "0.11.0";
   workspace = {
     nxy-agent = rustPackages.unknown.nxy-agent."0.1.0";
-    nxy-rpc = rustPackages.unknown.nxy-rpc."0.1.0";
+    nxy-common = rustPackages.unknown.nxy-common."0.1.0";
     nxy-server = rustPackages.unknown.nxy-server."0.1.0";
     nxy-cli = rustPackages.unknown.nxy-cli."0.1.0";
   };
@@ -1527,7 +1527,7 @@ in
     dependencies = {
       color_eyre = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".color-eyre."0.6.2" { inherit profileName; }).out;
       futures_util = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures-util."0.3.25" { inherit profileName; }).out;
-      nxy_rpc = (rustPackages."unknown".nxy-rpc."0.1.0" { inherit profileName; }).out;
+      nxy_common = (rustPackages."unknown".nxy-common."0.1.0" { inherit profileName; }).out;
       once_cell = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".once_cell."1.16.0" { inherit profileName; }).out;
       serde = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.149" { inherit profileName; }).out;
       serde_json = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.89" { inherit profileName; }).out;
@@ -1556,11 +1556,11 @@ in
     };
   });
   
-  "unknown".nxy-rpc."0.1.0" = overridableMkRustCrate (profileName: rec {
-    name = "nxy-rpc";
+  "unknown".nxy-common."0.1.0" = overridableMkRustCrate (profileName: rec {
+    name = "nxy-common";
     version = "0.1.0";
     registry = "unknown";
-    src = fetchCrateLocal (workspaceSrc + "/nxy-rpc");
+    src = fetchCrateLocal (workspaceSrc + "/nxy-common");
     dependencies = {
       serde = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.149" { inherit profileName; }).out;
       serde_json = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.89" { inherit profileName; }).out;
@@ -1583,7 +1583,7 @@ in
       color_eyre = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".color-eyre."0.6.2" { inherit profileName; }).out;
       futures_util = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".futures-util."0.3.25" { inherit profileName; }).out;
       hyper = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".hyper."0.14.23" { inherit profileName; }).out;
-      nxy_rpc = (rustPackages."unknown".nxy-rpc."0.1.0" { inherit profileName; }).out;
+      nxy_common = (rustPackages."unknown".nxy-common."0.1.0" { inherit profileName; }).out;
       serde = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.149" { inherit profileName; }).out;
       serde_json = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.89" { inherit profileName; }).out;
       sqlx = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".sqlx."0.6.2" { inherit profileName; }).out;

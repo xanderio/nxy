@@ -27,7 +27,7 @@ tracing = "0.1.37"
 tracing-error = "0.2.0"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 
-nxy-rpc = { path = "../nxy-rpc" }
+nxy-common = { path = "../nxy-common" }
 sqlx = { version = "0.6.2", features = [
         "runtime-tokio-rustls",
         "postgres",

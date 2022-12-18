@@ -8,7 +8,7 @@ use tokio::net::TcpStream;
 use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use tracing::instrument;
 
-use nxy_rpc::{JsonRPC, Request, Response};
+use nxy_common::{JsonRPC, Request, Response};
 
 mod activate;
 mod handler;

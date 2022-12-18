@@ -5,7 +5,7 @@ use std::{
 };
 
 use color_eyre::{eyre::eyre, Result};
-use nxy_rpc::{types::Status, JsonRPC, Request, RequestId, Response};
+use nxy_common::{types::Status, JsonRPC, Request, RequestId, Response};
 use serde::Serialize;
 use sqlx::PgPool;
 use tokio::sync::{mpsc, oneshot};

@@ -1,5 +1,5 @@
 [workspace]
-members = ["nxy-agent", "nxy-rpc", "nxy-server", "nxy-cli"]
+members = ["nxy-agent", "nxy-common", "nxy-server", "nxy-cli"]
 
 
 [profile.release]

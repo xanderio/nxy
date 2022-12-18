@@ -1214,7 +1214,7 @@ version = "0.1.0"
 dependencies = [
  "color-eyre",
  "futures-util",
- "nxy-rpc",
+ "nxy-common",
  "once_cell",
  "serde",
  "serde_json",
@@ -1240,7 +1240,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nxy-rpc"
+name = "nxy-common"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1259,7 +1259,7 @@ dependencies = [
  "console-subscriber",
  "futures-util",
  "hyper",
- "nxy-rpc",
+ "nxy-common",
  "serde",
  "serde_json",
  "sqlx",
