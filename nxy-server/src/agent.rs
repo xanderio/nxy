@@ -12,6 +12,9 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{instrument, Level};
 use uuid::Uuid;
 
+pub(crate) type Inbox = mpsc::Receiver<JsonRPC>;
+pub(crate) type Outbox = mpsc::Sender<JsonRPC>;
+
 #[derive(Debug)]
 pub struct AgentManager {
     pool: PgPool,
@@ -41,7 +44,7 @@ impl AgentManager {
         }
     }
 
-    pub async fn add_agent(&self, agent: Agent) -> Result<()> {
+    pub(crate) async fn add_agent(&self, agent: Agent) -> Result<()> {
         // request agent status to aquire the agent id
         let status = agent.status().await?;
 
@@ -81,12 +84,12 @@ pub struct Agent(Arc<AgentInner>);
 struct AgentInner {
     next_request_id: AtomicU64,
     pending: Mutex<HashMap<RequestId, oneshot::Sender<Response>>>,
-    outbox: mpsc::Sender<JsonRPC>,
+    outbox: Outbox,
     span: tracing::Span,
 }
 
 impl Agent {
-    pub fn new(inbox: mpsc::Receiver<JsonRPC>, outbox: mpsc::Sender<JsonRPC>) -> Self {
+    pub fn new(inbox: Inbox, outbox: Outbox) -> Self {
         let span = tracing::span!(Level::TRACE, "agent connection");
         let agent = Agent(Arc::new(AgentInner {
             next_request_id: AtomicU64::new(0),
@@ -101,7 +104,7 @@ impl Agent {
     }
 
     #[instrument(parent = &self.0.span, skip(self, inbox))]
-    async fn process_inbox(self, mut inbox: mpsc::Receiver<JsonRPC>) {
+    async fn process_inbox(self, mut inbox: Inbox) {
         while let Some(msg) = inbox.recv().await {
             tracing::trace!(?msg, "receiver message");
             match msg {
