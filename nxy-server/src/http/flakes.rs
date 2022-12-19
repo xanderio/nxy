@@ -70,6 +70,7 @@ async fn create_flake(
 
     tokio::spawn(process_configurations(
         ctx.db.clone(),
+        ctx.agent_manager.clone(),
         flake.flake_revision_id,
     ));
 
@@ -123,6 +124,6 @@ async fn get_flakes(ctx: State<ApiContext>) -> Result<Json<Vec<Flake>>> {
 }
 
 async fn update_flake(ctx: State<ApiContext>) -> Result<()> {
-    nix::update_flakes(&ctx.db).await?;
+    nix::update_flakes(&ctx.db, ctx.agent_manager.clone()).await?;
     Ok(())
 }

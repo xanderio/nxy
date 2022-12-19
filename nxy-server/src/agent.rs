@@ -78,6 +78,24 @@ impl AgentManager {
         }
         Ok(())
     }
+
+    #[instrument(skip(self))]
+    pub(crate) async fn process_update(&self, config_id: i64) -> Result<()> {
+        let agent_id = sqlx::query_scalar!(
+            "SELECT agent_id FROM agents WHERE nixos_configuration_id = $1",
+            config_id
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+
+        let Some(agent_id) = agent_id else { return Ok(()) };
+
+        tracing::info!("Updating configuration on agent {agent_id:?}");
+
+        //TODO(xanderio): implement pushing configuration update to agent :D
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone)]

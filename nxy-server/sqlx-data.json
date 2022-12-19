@@ -21,6 +21,26 @@
     },
     "query": "\n            SELECT nixos_configuration_id FROM nixos_configurations\n            WHERE flake_id = $1 AND name = $2\n            "
   },
+  "22649c01b8e7ae0984967ead6dd5858820dca9fd3b6db7f6e08326d26edf4957": {
+    "describe": {
+      "columns": [
+        {
+          "name": "agent_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT agent_id FROM agents WHERE nixos_configuration_id = $1"
+  },
   "38857dae16cc197447bb70b46740597bff095c2cdc5f1edb90ddf358e4d657d9": {
     "describe": {
       "columns": [

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, Utc};
 use color_eyre::{eyre::eyre, Help, Report, Result, SectionExt};
 use serde::{de::DeserializeOwned, Deserialize};
@@ -5,6 +7,8 @@ use serde_json::Value;
 use sqlx::PgPool;
 use tokio::process::Command;
 use tracing::instrument;
+
+use crate::agent::AgentManager;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct FlakeMetadata {
@@ -27,7 +31,7 @@ pub async fn flake_metadata(flake_url: &str) -> Result<(FlakeMetadata, Value)> {
 }
 
 #[instrument(skip_all)]
-pub(crate) async fn update_flakes(db: &PgPool) -> Result<()> {
+pub(crate) async fn update_flakes(db: &PgPool, agent_manager: Arc<AgentManager>) -> Result<()> {
     let flakes = sqlx::query!(
         r#"
         WITH last_rev AS (
@@ -65,13 +69,17 @@ pub(crate) async fn update_flakes(db: &PgPool) -> Result<()> {
         .fetch_one(db)
         .await?;
 
-        process_configurations(db.clone(), flake_revision_id).await?;
+        process_configurations(db.clone(), agent_manager.clone(), flake_revision_id).await?;
     }
     Ok(())
 }
 
-#[instrument(skip(db))]
-pub(crate) async fn process_configurations(db: PgPool, flake_revision_id: i64) -> Result<()> {
+#[instrument(skip(db, agent_manager))]
+pub(crate) async fn process_configurations(
+    db: PgPool,
+    agent_manager: Arc<AgentManager>,
+    flake_revision_id: i64,
+) -> Result<()> {
     tracing::info!("foo");
     let revision = sqlx::query!(
         "SELECT flake_id, url FROM flake_revisions WHERE flake_revision_id = $1",
@@ -87,6 +95,8 @@ pub(crate) async fn process_configurations(db: PgPool, flake_revision_id: i64) -
         let store_path = config_store_path(&revision.url, &config).await?;
         insert_nixos_configutaion_evaluation(&db, flake_revision_id, config_id, &store_path)
             .await?;
+        //TODO(xanderio): this is a hack
+        agent_manager.process_update(config_id).await?;
     }
     Ok(())
 }
