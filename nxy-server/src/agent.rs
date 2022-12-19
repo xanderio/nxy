@@ -133,7 +133,7 @@ impl Agent {
                     tracing::warn!(?request, "server received request, this should happen");
                 }
                 JsonRPC::Response(res) => {
-                    tracing::info!("{res:?}");
+                    tracing::trace!("{res:?}");
 
                     let mut pending = self.0.pending.lock().unwrap();
                     if let Some(tx) = pending.remove(&res.id) {
