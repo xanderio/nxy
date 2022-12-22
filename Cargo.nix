@@ -26,7 +26,7 @@ args@{
   ignoreLockHash,
 }:
 let
-  nixifiedLockHash = "e0d68327491b88cf8e40840f9ff7f2264418fd4957eb03c4b3fbfb1204260049";
+  nixifiedLockHash = "4f7d18436dfd8eb701e18d46252167a47e97ce3c41f13a1e7713ef63388688c2";
   workspaceSrc = if args.workspaceSrc == null then ./. else args.workspaceSrc;
   currentLockHash = builtins.hashFile "sha256" (workspaceSrc + /Cargo.lock);
   lockHashIgnored = if ignoreLockHash
@@ -393,11 +393,11 @@ in
     src = fetchCratesIo { inherit name version; sha256 = "fff857943da45f546682664a79488be82e69e43c1a7a2307679ab9afb3a66d2e"; };
   });
   
-  "registry+https://github.com/rust-lang/crates.io-index".clap."4.0.29" = overridableMkRustCrate (profileName: rec {
+  "registry+https://github.com/rust-lang/crates.io-index".clap."4.0.32" = overridableMkRustCrate (profileName: rec {
     name = "clap";
-    version = "4.0.29";
+    version = "4.0.32";
     registry = "registry+https://github.com/rust-lang/crates.io-index";
-    src = fetchCratesIo { inherit name version; sha256 = "4d63b9e9c07271b9957ad22c173bae2a4d9a81127680962039296abcd2f8251d"; };
+    src = fetchCratesIo { inherit name version; sha256 = "a7db700bc935f9e43e88d00b0850dae18a63773cfbec6d8e070fccf7fef89a39"; };
     features = builtins.concatLists [
       [ "color" ]
       [ "default" ]
@@ -1546,7 +1546,7 @@ in
     registry = "unknown";
     src = fetchCrateLocal (workspaceSrc + "/nxy-cli");
     dependencies = {
-      clap = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."4.0.29" { inherit profileName; }).out;
+      clap = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".clap."4.0.32" { inherit profileName; }).out;
       color_eyre = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".color-eyre."0.6.2" { inherit profileName; }).out;
       serde = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde."1.0.149" { inherit profileName; }).out;
       serde_json = (rustPackages."registry+https://github.com/rust-lang/crates.io-index".serde_json."1.0.89" { inherit profileName; }).out;
