@@ -10,12 +10,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
+    proc-flake.url = "github:srid/proc-flake";
+    flake-root.url = "github:srid/flake-root";
   };
 
   outputs = { self, flake-parts, ... }@inputs:
     flake-parts.lib.mkFlake { inherit self; } {
       systems = [ "x86_64-linux" ];
       imports = [
+        inputs.proc-flake.flakeModule
+        inputs.flake-root.flakeModule
+        ./modules/services.nix
         ./modules/devshell.nix
       ];
       perSystem = { pkgs, system, inputs', ... }:

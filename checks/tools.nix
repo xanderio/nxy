@@ -37,7 +37,9 @@ let
           start_all()
 
           server.wait_for_unit("nxy-server.service")
-          server.wait_for_open_port(8080)
+          server.wait_for_open_port(8085)
+          server.wait_for_unit("nix-serve.service")
+          server.wait_for_unit("nginx.service")
           for node in clients:
             node.wait_for_unit("nxy-agent.service")
 
@@ -57,10 +59,27 @@ let
   ## Common setup 
 
   # Setup for server node
-  serverConfig = { ... }: {
+  serverConfig = { config, ... }: {
     imports = [ self.nixosModules.server ];
+    networking.firewall.enable = false;
     environment.systemPackages = [ pkgs.jq ];
     services.nxy-server.enable = true;
+    services.nix-serve.enable = true;
+    services.nginx = {
+      enable = true;
+      upstreams."nix-serve".servers."localhost:${toString config.services.nix-serve.port}" = { };
+      virtualHosts."nxy" = {
+        default = true;
+        locations."/" = {
+          proxyPass = "http://127.0.0.1:8085";
+          proxyWebsockets = true;
+        };
+
+        locations."/nix-cache-info".proxyPass = "http://nix-serve";
+        locations."/nar".proxyPass = "http://nix-serve";
+        locations."~ /*.\\.narinfo".proxyPass = "http://nix-serve";
+      };
+    };
     virtualisation = {
       # The server needs to be able to write to the store 
       # in order to build new system configurations
@@ -75,7 +94,7 @@ let
     imports = [ self.nixosModules.agent ];
     services.nxy-agent = {
       enable = true;
-      server = "ws://server:8080";
+      server = "ws://server:80";
     };
   };
 

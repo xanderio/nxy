@@ -29,7 +29,7 @@ pub async fn serve(db: PgPool, agent_manager: Arc<AgentManager>) -> color_eyre::
     let app = api_router(api_context);
 
     //TODO: make port configuratable
-    let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8080));
+    let addr = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8085));
     tracing::info!("running on {addr}");
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

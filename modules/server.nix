@@ -33,8 +33,6 @@ in
 
     users.groups.nxy = { };
 
-    networking.firewall.allowedTCPPorts = [ 8080 ];
-
     systemd.services.nxy-server = {
       enable = true;
       wantedBy = [ "multi-user.target" ];
