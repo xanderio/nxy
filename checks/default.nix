@@ -2,7 +2,10 @@
   imports = [
     ./tools.nix
   ];
-  perSystem.imports = [
-    ./clients-connect
-  ];
+  perSystem = { self', ... }: {
+    imports = [
+      ./clients-connect
+    ];
+    checks = self'.packages;
+  };
 }
