@@ -22,6 +22,7 @@
         inputs.flake-root.flakeModule
         ./modules/services.nix
         ./modules/devshell.nix
+        ./checks
       ];
       perSystem = { pkgs, system, inputs', ... }:
         let
@@ -56,9 +57,6 @@
 
             default = nxy-server;
           };
-
-          checks = import ./checks { inherit self pkgs; };
-
         };
 
       flake = {

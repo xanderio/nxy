@@ -1,3 +1,8 @@
-{ self, pkgs }: {
-  clients-connect = import ./clients-connect { inherit self pkgs; };
+{
+  imports = [
+    ./tools.nix
+  ];
+  perSystem.imports = [
+    ./clients-connect
+  ];
 }
