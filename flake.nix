@@ -15,7 +15,7 @@
   };
 
   outputs = { self, flake-parts, ... }@inputs:
-    flake-parts.lib.mkFlake { inherit self; } {
+    flake-parts.lib.mkFlake { inherit inputs; } {
       systems = [ "x86_64-linux" ];
       imports = [
         inputs.proc-flake.flakeModule
