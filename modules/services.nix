@@ -26,6 +26,7 @@
           reverse_proxy /nar/* unix//${nixServeSocket}
           reverse_proxy /*.narinfo unix//${nixServeSocket}
           reverse_proxy /nix-cache-info unix//${nixServeSocket}
+          log
         '';
       in
       {
