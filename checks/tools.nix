@@ -15,9 +15,18 @@
           cfg = config.nxy.test;
 
           clientList = "[${lib.concatStringsSep ", " clients}]";
+          flake = pkgs.runCommand "${config.name}-flake" { } '' 
+            cp -r ${cfg.flake} $out
+            chmod u+w $out
+          '';
         in
         {
           options.nxy.test = {
+            flake = lib.mkOption {
+              description = "Path to a directory containing a flake that is added as an nxy input";
+              type = lib.types.path;
+            };
+
             testScript = lib.mkOption {
               description = ''
                 The test script. 
@@ -30,20 +39,36 @@
           };
 
           config = {
-            testScript = ''
-              clients = ${clientList}
+            testScript =
+              let
+                inherit (self.inputs) nixpkgs;
+                nixpkgsPath = "path:${nixpkgs.outPath}?narHash=${nixpkgs.narHash}";
+              in
+              ''
+                clients = ${clientList}
 
-              start_all()
+                start_all()
 
-              server.wait_for_unit("nxy-server.service")
-              server.wait_for_open_port(8085)
-              server.wait_for_unit("nix-serve.service")
-              server.wait_for_unit("nginx.service")
-              for node in clients:
-                node.wait_for_unit("nxy-agent.service")
+                server.succeed("cp --no-preserve=mode -r ${flake} /tmp/flake && chmod u+w /tmp/flake")
 
-              ${cfg.testScript}
-            '';
+                server.succeed("sed -i 's @nixpkgs@ ${nixpkgsPath} g' /tmp/flake/flake.nix")
+                server.succeed("cd /tmp/flake && nix --extra-experimental-features \"nix-command flakes\" flake lock")
+              
+                with subtest("Create git repository and commit flake"):
+                  server.succeed("git config --global user.email nxy@example.com")
+                  server.succeed("git config --global user.name nxy")
+                  server.succeed("cd /tmp/flake && git init && git add flake.nix flake.lock")
+                  server.succeed("cd /tmp/flake && git commit --message 'Initial commit'")
+
+                server.wait_for_unit("nxy-server.service")
+                server.wait_for_open_port(8085)
+                server.wait_for_unit("nix-serve.service")
+                server.wait_for_unit("nginx.service")
+                for node in clients:
+                  node.wait_for_unit("nxy-agent.service")
+
+                ${cfg.testScript}
+              '';
           };
         };
 
@@ -58,10 +83,10 @@
       ## Common setup 
 
       # Setup for server node
-      serverConfig = { config, ... }: {
+      serverConfig = { pkgs, config, ... }: {
         imports = [ self.nixosModules.server ];
         networking.firewall.enable = false;
-        environment.systemPackages = [ pkgs.jq ];
+        environment.systemPackages = [ pkgs.jq pkgs.git pkgs.nxy-cli ];
         services.nxy-server.enable = true;
         services.nix-serve.enable = true;
         services.nginx = {

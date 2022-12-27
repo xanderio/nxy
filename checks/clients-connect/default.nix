@@ -2,6 +2,9 @@
   checks.clients-connect = runTests {
     name = "nxy-clients-connect";
 
-    nxy.test.testScript = builtins.readFile ./test-script.py;
+    nxy.test = {
+      flake = ./.;
+      testScript = builtins.readFile ./test-script.py;
+    };
   };
 }
