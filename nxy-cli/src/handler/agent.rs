@@ -1,4 +1,4 @@
-use crate::args::AgentAction;
+use crate::{args::AgentAction, utils::format_url};
 use color_eyre::Result;
 use serde::Deserialize;
 use tabled::{Style, Table, Tabled};
@@ -19,7 +19,7 @@ struct Agent {
 }
 
 fn list_agents() -> Result<()> {
-    let agents: Vec<Agent> = ureq::get("http://localhost:8080/api/v1/agent")
+    let agents: Vec<Agent> = ureq::get(&format_url("/api/v1/agent"))
         .call()?
         .into_json()?;
 

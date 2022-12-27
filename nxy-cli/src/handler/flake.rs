@@ -4,7 +4,7 @@ use color_eyre::Result;
 use serde::Deserialize;
 use tabled::{Style, Table, Tabled};
 
-use crate::args::FlakeAction;
+use crate::{args::FlakeAction, utils::format_url};
 
 pub(crate) fn handle(action: FlakeAction) -> Result<()> {
     match action {
@@ -35,7 +35,7 @@ impl Display for FlakeRevision {
 }
 
 fn list_flakes() -> Result<()> {
-    let flakes: Vec<Flake> = ureq::get("http://localhost:8080/api/v1/flake")
+    let flakes: Vec<Flake> = ureq::get(&format_url("/api/v1/flake"))
         .call()?
         .into_json()?;
 
@@ -46,7 +46,7 @@ fn list_flakes() -> Result<()> {
 }
 
 fn add_flake(flake_url: String) -> Result<()> {
-    ureq::post("http://localhost:8080/api/v1/flake").send_json(ureq::json!({
+    ureq::post(&format_url("/api/v1/flake")).send_json(ureq::json!({
         "flake": {
             "flake_url": flake_url
         }

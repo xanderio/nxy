@@ -2,7 +2,7 @@ use color_eyre::Result;
 use serde::Deserialize;
 use tabled::{Style, Table, Tabled};
 
-use crate::args::ConfigsAction;
+use crate::{args::ConfigsAction, utils::format_url};
 
 pub(crate) fn handle(action: ConfigsAction) -> Result<()> {
     match action {
@@ -18,7 +18,7 @@ struct Config {
 }
 
 fn list_configs() -> Result<()> {
-    let configs: Vec<Config> = ureq::get("http://localhost:8080/api/v1/configuration")
+    let configs: Vec<Config> = ureq::get(&format_url("/api/v1/configuration"))
         .call()?
         .into_json()?;
 
