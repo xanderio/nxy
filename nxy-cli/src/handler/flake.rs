@@ -1,19 +1,22 @@
 use std::fmt::Display;
 
 use color_eyre::Result;
-use serde::Deserialize;
-use tabled::{Style, Table, Tabled};
+use serde::{Deserialize, Serialize};
+use tabled::Tabled;
 
-use crate::{args::FlakeAction, utils::format_url};
+use crate::{
+    args::{FlakeAction, Format},
+    utils::{format_output, format_url},
+};
 
-pub(crate) fn handle(action: FlakeAction) -> Result<()> {
+pub(crate) fn handle(action: FlakeAction, format: Format) -> Result<()> {
     match action {
-        FlakeAction::List => list_flakes(),
+        FlakeAction::List => list_flakes(format),
         FlakeAction::Add { flake_url } => add_flake(flake_url),
     }
 }
 
-#[derive(Debug, Deserialize, Tabled)]
+#[derive(Debug, Deserialize, Serialize, Tabled)]
 struct Flake {
     #[tabled(rename = "id")]
     flake_id: i64,
@@ -23,7 +26,7 @@ struct Flake {
     lastest_revision: FlakeRevision,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct FlakeRevision {
     revision: String,
 }
@@ -34,13 +37,12 @@ impl Display for FlakeRevision {
     }
 }
 
-fn list_flakes() -> Result<()> {
+fn list_flakes(format: Format) -> Result<()> {
     let flakes: Vec<Flake> = ureq::get(&format_url("/api/v1/flake"))
         .call()?
         .into_json()?;
 
-    let table = Table::new(flakes).with(Style::rounded()).to_string();
-    println!("{table}");
+    println!("{}", format_output(flakes, format));
 
     Ok(())
 }

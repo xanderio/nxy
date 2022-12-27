@@ -1,29 +1,31 @@
 use color_eyre::Result;
-use serde::Deserialize;
-use tabled::{Style, Table, Tabled};
+use serde::{Deserialize, Serialize};
+use tabled::Tabled;
 
-use crate::{args::ConfigsAction, utils::format_url};
+use crate::{
+    args::{ConfigsAction, Format},
+    utils::{format_output, format_url},
+};
 
-pub(crate) fn handle(action: ConfigsAction) -> Result<()> {
+pub(crate) fn handle(action: ConfigsAction, format: Format) -> Result<()> {
     match action {
-        ConfigsAction::List => list_configs(),
+        ConfigsAction::List => list_configs(format),
     }
 }
 
-#[derive(Deserialize, Tabled)]
+#[derive(Deserialize, Serialize, Tabled)]
 struct Config {
     #[tabled(rename = "flake url")]
     flake_url: String,
     name: String,
 }
 
-fn list_configs() -> Result<()> {
+fn list_configs(format: Format) -> Result<()> {
     let configs: Vec<Config> = ureq::get(&format_url("/api/v1/configuration"))
         .call()?
         .into_json()?;
 
-    let table = Table::new(configs).with(Style::rounded()).to_string();
-    println!("{table}");
+    println!("{}", format_output(configs, format));
 
     Ok(())
 }

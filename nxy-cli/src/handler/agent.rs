@@ -1,15 +1,18 @@
-use crate::{args::AgentAction, utils::format_url};
+use crate::{
+    args::{AgentAction, Format},
+    utils::{format_output, format_url},
+};
 use color_eyre::Result;
-use serde::Deserialize;
-use tabled::{Style, Table, Tabled};
+use serde::{Deserialize, Serialize};
+use tabled::Tabled;
 
-pub(crate) fn handle(action: AgentAction) -> Result<()> {
+pub(crate) fn handle(action: AgentAction, format: Format) -> Result<()> {
     match action {
-        AgentAction::List => list_agents(),
+        AgentAction::List => list_agents(format),
     }
 }
 
-#[derive(Debug, Deserialize, Tabled)]
+#[derive(Debug, Deserialize, Serialize, Tabled)]
 struct Agent {
     #[tabled(rename = "Id")]
     id: uuid::Uuid,
@@ -18,12 +21,11 @@ struct Agent {
     current_system: String,
 }
 
-fn list_agents() -> Result<()> {
+fn list_agents(format: Format) -> Result<()> {
     let agents: Vec<Agent> = ureq::get(&format_url("/api/v1/agent"))
         .call()?
         .into_json()?;
 
-    let table = Table::new(agents).with(Style::rounded()).to_string();
-    println!("{table}");
+    println!("{}", format_output(agents, format));
     Ok(())
 }

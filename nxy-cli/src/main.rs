@@ -12,8 +12,8 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     match args.action {
-        Action::Agents { action } => handler::agent::handle(action),
-        Action::Flakes { action } => handler::flake::handle(action),
-        Action::Configs { action } => handler::configuration::handle(action),
+        Action::Agents { action } => handler::agent::handle(action, args.format),
+        Action::Flakes { action } => handler::flake::handle(action, args.format),
+        Action::Configs { action } => handler::configuration::handle(action, args.format),
     }
 }
