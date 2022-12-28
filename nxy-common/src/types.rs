@@ -15,3 +15,8 @@ pub struct System {
     pub current: PathBuf,
     pub booted: PathBuf,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DownloadParams {
+    pub store_path: PathBuf,
+}

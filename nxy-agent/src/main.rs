@@ -90,6 +90,7 @@ async fn handle_request(request: Request) -> Result<Response> {
     let response = match request.method.as_str() {
         "$/ping" => handler::ping(&request),
         "$/status" => handler::status(&request).await,
+        "$/download" => handler::download(&request).await,
         _ => handler::unknown(&request),
     };
     tracing::debug!("done processing request");

@@ -1,11 +1,12 @@
 use std::{io, path::PathBuf};
 
-use color_eyre::Result;
+use color_eyre::{eyre::ensure, Result};
 use nxy_common::{
-    types::{Status, System},
+    types::{DownloadParams, Status, System},
     ErrorCode, Request, Response,
 };
 use serde_json::json;
+use tokio::process::Command;
 use tracing::instrument;
 
 use crate::STATE;
@@ -41,6 +42,26 @@ pub(super) async fn status(request: &Request) -> Result<Response> {
     };
 
     Ok(Response::new_ok(request.id, json!(status)))
+}
+
+pub(super) async fn download(request: &Request) -> Result<Response> {
+    let params: DownloadParams = serde_json::from_value(request.params.clone())?;
+
+    let mut cmd = Command::new("nix");
+    cmd.args([
+        "copy",
+        "--substitute-on-destination",
+        "--verbose",
+        "--no-check-sigs",
+        "--from",
+    ]);
+    cmd.arg(params.source);
+    cmd.arg(params.store_path);
+
+    let output = cmd.output().await?;
+    ensure!(output.status.success(), "nix copy failed");
+
+    Ok(Response::new_ok(request.id, ()))
 }
 
 #[instrument(skip(request))]
