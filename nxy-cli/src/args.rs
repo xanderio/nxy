@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand, ValueEnum};
+use uuid::Uuid;
 
 #[derive(Parser)]
 pub(crate) struct Args {
@@ -38,6 +39,10 @@ pub(crate) enum Action {
 pub(crate) enum AgentAction {
     /// List all agents
     List,
+    SetConfig {
+        agent_id: Uuid,
+        config_id: i64,
+    },
 }
 
 #[derive(Subcommand)]

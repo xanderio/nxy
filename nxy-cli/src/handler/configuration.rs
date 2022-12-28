@@ -15,6 +15,7 @@ pub(crate) fn handle(action: ConfigsAction, format: Format) -> Result<()> {
 
 #[derive(Deserialize, Serialize, Tabled)]
 struct Config {
+    id: i64,
     #[tabled(rename = "flake url")]
     flake_url: String,
     name: String,
