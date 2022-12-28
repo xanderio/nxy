@@ -96,7 +96,9 @@ pub(crate) async fn process_configurations(
         insert_nixos_configutaion_evaluation(&db, flake_revision_id, config_id, &store_path)
             .await?;
         //TODO(xanderio): this is a hack
-        agent_manager.process_update(config_id).await?;
+        agent_manager
+            .process_update(config_id, flake_revision_id)
+            .await?;
     }
     Ok(())
 }

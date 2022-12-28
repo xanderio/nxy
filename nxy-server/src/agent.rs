@@ -1,11 +1,15 @@
 use std::{
     collections::HashMap,
+    path::PathBuf,
     sync::{atomic::AtomicU64, Arc, Mutex},
     time::Duration,
 };
 
 use color_eyre::{eyre::eyre, Result};
-use nxy_common::{types::Status, JsonRPC, Request, RequestId, Response};
+use nxy_common::{
+    types::{DownloadParams, Status},
+    JsonRPC, Request, RequestId, Response,
+};
 use serde::Serialize;
 use sqlx::PgPool;
 use tokio::sync::{mpsc, oneshot};
@@ -80,7 +84,11 @@ impl AgentManager {
     }
 
     #[instrument(skip(self))]
-    pub(crate) async fn process_update(&self, config_id: i64) -> Result<()> {
+    pub(crate) async fn process_update(
+        &self,
+        config_id: i64,
+        flake_revision_id: i64,
+    ) -> Result<()> {
         let agent_id = sqlx::query_scalar!(
             "SELECT agent_id FROM agents WHERE nixos_configuration_id = $1",
             config_id
@@ -92,7 +100,27 @@ impl AgentManager {
 
         tracing::info!("Updating configuration on agent {agent_id:?}");
 
-        //TODO(xanderio): implement pushing configuration update to agent :D
+        let store_path = sqlx::query_scalar!(
+            "SELECT store_path 
+            FROM nixos_configuration_evaluations 
+            WHERE flake_revision_id = $1 
+                AND nixos_configuration_id = $2",
+            flake_revision_id,
+            config_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let agent = {
+            let agents = self.agents.lock().unwrap();
+            agents.get(&agent_id).unwrap().clone()
+        };
+
+        agent
+            .download(DownloadParams {
+                store_path: PathBuf::from(store_path),
+            })
+            .await?;
 
         Ok(())
     }
@@ -195,6 +223,15 @@ impl Agent {
             res.result
                 .ok_or_else(|| eyre!("status result is empty"))
                 .and_then(|v| serde_json::from_value(v).map_err(Into::into))
+        }
+    }
+
+    pub(crate) async fn download(&self, params: DownloadParams) -> Result<()> {
+        let res = self.send_request("$/download", params).await.await?;
+        if let Some(error) = res.error {
+            Err(eyre!("request error: {:?}", error))
+        } else {
+            Ok(())
         }
     }
 }
