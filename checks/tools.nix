@@ -87,6 +87,7 @@
         imports = [ self.nixosModules.server ];
         networking.firewall.enable = false;
         environment.systemPackages = [ pkgs.jq pkgs.git pkgs.nxy-cli ];
+
         services.nxy-server.enable = true;
         services.nix-serve.enable = true;
         services.nginx = {
@@ -104,6 +105,7 @@
             locations."~ /*.\\.narinfo".proxyPass = "http://nix-serve";
           };
         };
+        nix.settings.experimental-features = [ "nix-command" "flakes" ]; 
         virtualisation = {
           # The server needs to be able to write to the store 
           # in order to build new system configurations
@@ -116,6 +118,8 @@
       # Keep as minimal as possible.
       clientConfig = { ... }: {
         imports = [ self.nixosModules.agent ];
+        nix.settings.experimental-features = [ "nix-command" "flakes" ]; 
+        environment.systemPackages = [ pkgs.jq ];
         services.nxy-agent = {
           enable = true;
           server = "ws://server:80";

@@ -14,6 +14,10 @@ pub(crate) fn handle(action: AgentAction, format: Format) -> Result<()> {
             agent_id,
             config_id,
         } => set_configuration(agent_id, config_id),
+        AgentAction::Download {
+            agent_id,
+            store_path,
+        } => download_store_path(agent_id, store_path),
     }
 }
 
@@ -38,6 +42,13 @@ fn list_agents(format: Format) -> Result<()> {
 fn set_configuration(agent_id: Uuid, config_id: i64) -> Result<()> {
     ureq::post(&format_url(&format!("/api/v1/agent/{agent_id}")))
         .send_json(ureq::json!({ "config_id": config_id }))
+        .unwrap();
+    Ok(())
+}
+
+fn download_store_path(agent_id: Uuid, store_path: String) -> Result<()> {
+    ureq::post(&format_url(&format!("/api/v1/agent/{agent_id}/download")))
+        .send_json(ureq::json!({ "store_path": store_path }))
         .unwrap();
     Ok(())
 }

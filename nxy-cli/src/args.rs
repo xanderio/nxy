@@ -43,6 +43,10 @@ pub(crate) enum AgentAction {
         agent_id: Uuid,
         config_id: i64,
     },
+    Download {
+        agent_id: Uuid,
+        store_path: String,
+    },
 }
 
 #[derive(Subcommand)]

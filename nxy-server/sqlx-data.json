@@ -41,6 +41,27 @@
     },
     "query": "SELECT agent_id FROM agents WHERE nixos_configuration_id = $1"
   },
+  "3668eeb80c9e345e564f9508ea39b43e0fa44ced2077cfe9188103ffeb96fe68": {
+    "describe": {
+      "columns": [
+        {
+          "name": "store_path",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT store_path \n            FROM nixos_configuration_evaluations \n            WHERE flake_revision_id = $1 \n                AND nixos_configuration_id = $2"
+  },
   "38857dae16cc197447bb70b46740597bff095c2cdc5f1edb90ddf358e4d657d9": {
     "describe": {
       "columns": [
@@ -260,6 +281,19 @@
       }
     },
     "query": "\n            WITH inserted_flake AS (\n                INSERT INTO flakes (flake_url)\n                VALUES ($1)\n                RETURNING flake_id, flake_url\n            ), inserted_revision AS (\n                INSERT INTO flake_revisions (flake_id, revision, last_modified, url, metadata)\n                SELECT flake_id, $2, $3, $4, $5\n                FROM inserted_flake\n                RETURNING flake_revision_id, revision, last_modified, url\n            )\n            SELECT flake_id, flake_url, flake_revision_id, revision, last_modified, url\n            FROM inserted_flake, inserted_revision\n        "
+  },
+  "95eac1538659cf580de95ada7d1efd105be059b0f3bc4a883bfd926a6cebdee5": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "UPDATE agents SET nixos_configuration_id = $1 WHERE agent_id = $2"
   },
   "bc071afcbbc3d4c41e8aaa90145ae531a55214e15c0f996461aef3ecf60ff824": {
     "describe": {

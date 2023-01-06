@@ -124,6 +124,11 @@ impl AgentManager {
 
         Ok(())
     }
+
+    pub(crate) fn get(&self, agent_id: Uuid) -> Option<Agent> {
+        let agents = self.agents.lock().unwrap();
+        agents.get(&agent_id).cloned()
+    }
 }
 
 #[derive(Debug, Clone)]

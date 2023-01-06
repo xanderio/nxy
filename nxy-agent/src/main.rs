@@ -29,8 +29,8 @@ async fn main() -> Result<()> {
     color_eyre::install()?;
 
     let server_url = std::env::args()
-        .nth(1)
-        .expect("first argument must be server address eg. ws://localhost:8080");
+        .nth(2)
+        .expect("second argument must be server address eg. ws://localhost:8080");
 
     run(&server_url).await
 }

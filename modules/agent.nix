@@ -23,7 +23,8 @@ in
       enable = true;
       wantedBy = [ "multi-user.target" ];
       after = [ "nix-deamon.service" ];
-      script = "${pkgs.nxy-agent}/bin/nxy-agent ${cfg.server}";
+      path = [ pkgs.nix ];
+      script = "${pkgs.nxy-agent}/bin/nxy-agent /var/lib/nxy ${cfg.server}";
     };
   };
 }

@@ -1,6 +1,9 @@
 use std::{io, path::PathBuf};
 
-use color_eyre::{eyre::ensure, Result};
+use color_eyre::{
+    eyre::{bail, ensure},
+    Result,
+};
 use nxy_common::{
     types::{DownloadParams, Status, System},
     ErrorCode, Request, Response,
@@ -54,12 +57,15 @@ pub(super) async fn download(request: &Request) -> Result<Response> {
         "--verbose",
         "--no-check-sigs",
         "--from",
+        "http://server",
     ]);
-    cmd.arg(params.source);
     cmd.arg(params.store_path);
 
     let output = cmd.output().await?;
-    ensure!(output.status.success(), "nix copy failed");
+    if !output.status.success() {
+        println!("{}", String::from_utf8_lossy(&output.stderr));
+        bail!("nix copy failed");
+    }
 
     Ok(Response::new_ok(request.id, ()))
 }

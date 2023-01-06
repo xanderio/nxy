@@ -15,6 +15,10 @@ pub(crate) fn router() -> Router<ApiContext> {
         .route("/api/v1/agent", get(get_agents))
         .route("/api/v1/agent/ws", get(websocket::ws_handler))
         .route("/api/v1/agent/:agent_id", post(set_configuration))
+        .route(
+            "/api/v1/agent/:agent_id/download",
+            post(download_store_path),
+        )
 }
 
 #[derive(Serialize)]
@@ -55,4 +59,24 @@ async fn set_configuration(
     .execute(&ctx.db)
     .await?;
     Ok(())
+}
+
+#[derive(Deserialize)]
+struct DownloadStorePath {
+    store_path: String,
+}
+
+async fn download_store_path(
+    ctx: State<ApiContext>,
+    Path(agent_id): Path<Uuid>,
+    Json(req): Json<DownloadStorePath>,
+) -> Result<()> {
+    let agent = ctx.agent_manager.get(agent_id).unwrap();
+
+    agent
+        .download(nxy_common::types::DownloadParams {
+            store_path: req.store_path.into(),
+        })
+        .await
+        .map_err(Into::into)
 }
