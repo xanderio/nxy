@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use color_eyre::{eyre::Context, Result};
+use color_eyre::Result;
 use nxy_server::agent::AgentManager;
 use nxy_server::config::load_config;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
