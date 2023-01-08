@@ -1,6 +1,6 @@
 # Adapted from the Colmena test framework.
 
-{ self, ... }:
+{ self, inputs, ... }:
 {
   perSystem = { pkgs, lib, ... }:
     let
@@ -110,11 +110,20 @@
             locations."~ /*.\\.narinfo".proxyPass = "http://nix-serve";
           };
         };
+        nix.registry.nixpkgs.flake = inputs.nixpkgs;
         nix.settings.experimental-features = [ "nix-command" "flakes" ]; 
         virtualisation = {
           # The server needs to be able to write to the store 
           # in order to build new system configurations
           writableStore = true;
+          additionalPaths = [
+            # speedup initial flake locking inside vm
+            inputs.nixpkgs
+
+
+            # used in tests
+            pkgs.hello
+          ];
         };
       };
 
