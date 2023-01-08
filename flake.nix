@@ -23,6 +23,7 @@
         ./modules/services.nix
         ./modules/devshell.nix
         ./checks
+        ./nixosModules
       ];
       perSystem = { pkgs, system, inputs', ... }:
         let
@@ -67,10 +68,6 @@
           {
             inherit (self.packages.${system}) nxy-agent nxy-server nxy-cli;
           };
-        nixosModules = {
-          agent = import ./modules/agent.nix self;
-          server = import ./modules/server.nix self;
-        };
       };
     };
 }
