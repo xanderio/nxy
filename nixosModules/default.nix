@@ -1,6 +1,6 @@
 { self, ... }: {
   flake.nixosModules = {
-    agent = import ./modules/agent.nix self;
-    server = import ./modules/server.nix self;
+    agent = import ./agent.nix self;
+    server = import ./server.nix self;
   };
 }
