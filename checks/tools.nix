@@ -111,7 +111,7 @@
           };
         };
         nix.registry.nixpkgs.flake = inputs.nixpkgs;
-        nix.settings.experimental-features = [ "nix-command" "flakes" ]; 
+        nix.settings.experimental-features = [ "nix-command" "flakes" ];
         virtualisation = {
           # The server needs to be able to write to the store 
           # in order to build new system configurations
@@ -132,7 +132,7 @@
       # Keep as minimal as possible.
       clientConfig = { ... }: {
         imports = [ self.nixosModules.agent ];
-        nix.settings.experimental-features = [ "nix-command" "flakes" ]; 
+        nix.settings.experimental-features = [ "nix-command" "flakes" ];
         environment.systemPackages = [ pkgs.jq ];
         services.nxy-agent = {
           enable = true;

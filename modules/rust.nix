@@ -1,5 +1,5 @@
-{inputs, ...}:{
-    perSystem = { inputs', pkgs, system, ... }:
+{ inputs, ... }: {
+  perSystem = { inputs', pkgs, system, ... }:
     let
       rustToolchain = inputs'.fenix.packages.stable.toolchain;
       rustPkgs = pkgs.rustBuilder.makePackageSet {
@@ -16,11 +16,12 @@
       };
     in
     {
-      _module.args = { inherit rustToolchain rustPkgs; 
-            pkgs = import inputs.nixpkgs {
-              inherit system;
-              overlays = [ inputs.cargo2nix.overlays.default ];
-            };
+      _module.args = {
+        inherit rustToolchain rustPkgs;
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [ inputs.cargo2nix.overlays.default ];
+        };
       };
 
     };

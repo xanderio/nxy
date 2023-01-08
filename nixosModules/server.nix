@@ -13,7 +13,7 @@ in
     settings = lib.mkOption {
       type = lib.types.submodule {
         freeformType = json.type;
-        options = { 
+        options = {
           external_url = lib.mkOption {
             type = types.str;
           };
