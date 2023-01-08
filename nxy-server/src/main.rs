@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use color_eyre::{eyre::Context, Result};
 use nxy_server::agent::AgentManager;
+use nxy_server::config::load_config;
 use sqlx::postgres::{PgConnectOptions, PgPoolOptions};
 use tracing::subscriber::Subscriber;
 use tracing_subscriber::Layer;
@@ -9,13 +12,16 @@ async fn main() -> Result<()> {
     install_tracing();
     color_eyre::install()?;
 
+    let config_path = std::env::args().nth(1);
+    let config = Arc::new(load_config(config_path));
+
     let options = PgConnectOptions::new_without_pgpass();
     let pool = PgPoolOptions::new().connect_with(options).await?;
     sqlx::migrate!().run(&pool).await?;
 
-    let agent_manager = AgentManager::start(pool.clone()).await;
+    let agent_manager = AgentManager::start(config.clone(), pool.clone()).await;
 
-    nxy_server::http::serve(pool, agent_manager).await
+    nxy_server::http::serve(config, pool, agent_manager).await
 }
 
 fn install_tracing() {

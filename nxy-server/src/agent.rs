@@ -16,18 +16,22 @@ use tokio::sync::{mpsc, oneshot};
 use tracing::{instrument, Level};
 use uuid::Uuid;
 
+use crate::config::Config;
+
 pub(crate) type Inbox = mpsc::Receiver<JsonRPC>;
 pub(crate) type Outbox = mpsc::Sender<JsonRPC>;
 
 #[derive(Debug)]
 pub struct AgentManager {
+    config: Arc<Config>,
     pool: PgPool,
     agents: Mutex<HashMap<Uuid, Agent>>,
 }
 
 impl AgentManager {
-    pub async fn start(pool: PgPool) -> Arc<Self> {
+    pub async fn start(config: Arc<Config>, pool: PgPool) -> Arc<Self> {
         let manager = Arc::new(Self {
+            config,
             pool,
             agents: Default::default(),
         });
@@ -119,6 +123,7 @@ impl AgentManager {
         agent
             .download(DownloadParams {
                 store_path: PathBuf::from(store_path),
+                from: self.config.external_url.clone(),
             })
             .await?;
 

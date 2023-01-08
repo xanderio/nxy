@@ -57,7 +57,7 @@ pub(super) async fn download(request: &Request) -> Result<Response> {
         "--verbose",
         "--no-check-sigs",
         "--from",
-        "http://server",
+        &params.from,
     ]);
     cmd.arg(params.store_path);
 

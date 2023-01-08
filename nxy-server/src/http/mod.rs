@@ -13,18 +13,27 @@ use color_eyre::eyre::WrapErr;
 use sqlx::PgPool;
 use tower_http::trace::TraceLayer;
 
-use crate::{agent::AgentManager, http::error::Error};
+use crate::{agent::AgentManager, config::Config, http::error::Error};
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Clone)]
 pub(crate) struct ApiContext {
+    config: Arc<Config>,
     db: PgPool,
     agent_manager: Arc<AgentManager>,
 }
 
-pub async fn serve(db: PgPool, agent_manager: Arc<AgentManager>) -> color_eyre::Result<()> {
-    let api_context = ApiContext { db, agent_manager };
+pub async fn serve(
+    config: Arc<Config>,
+    db: PgPool,
+    agent_manager: Arc<AgentManager>,
+) -> color_eyre::Result<()> {
+    let api_context = ApiContext {
+        config,
+        db,
+        agent_manager,
+    };
 
     let app = api_router(api_context);
 

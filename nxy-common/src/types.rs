@@ -19,4 +19,5 @@ pub struct System {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DownloadParams {
     pub store_path: PathBuf,
+    pub from: String,
 }

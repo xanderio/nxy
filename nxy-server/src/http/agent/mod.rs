@@ -76,6 +76,7 @@ async fn download_store_path(
     agent
         .download(nxy_common::types::DownloadParams {
             store_path: req.store_path.into(),
+            from: ctx.config.external_url.clone(),
         })
         .await
         .map_err(Into::into)

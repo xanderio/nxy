@@ -1,11 +1,26 @@
 self:
 { pkgs, lib, config, ... }:
 let
+  inherit (lib) types;
   cfg = config.services.nxy-server;
+
+  json = pkgs.formats.json { };
 in
 {
   options.services.nxy-server = {
     enable = lib.mkEnableOption "nxy server";
+
+    settings = lib.mkOption {
+      type = lib.types.submodule {
+        freeformType = json.type;
+        options = { 
+          external_url = lib.mkOption {
+            type = types.str;
+          };
+        };
+      };
+      default = { };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -39,7 +54,7 @@ in
       after = [ "postgresql.service" ];
       requires = [ "postgresql.service" ];
       serviceConfig = {
-        ExecStart = "${pkgs.nxy-server}/bin/nxy-server";
+        ExecStart = "${pkgs.nxy-server}/bin/nxy-server ${json.generate "nxy-server.json" cfg.settings}";
         User = "nxy";
         Group = "nxy";
       };

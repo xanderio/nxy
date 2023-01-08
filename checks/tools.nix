@@ -88,7 +88,12 @@
         networking.firewall.enable = false;
         environment.systemPackages = [ pkgs.jq pkgs.git pkgs.nxy-cli ];
 
-        services.nxy-server.enable = true;
+        services.nxy-server = {
+          enable = true;
+          settings = {
+            external_url = "http://server";
+          };
+        };
         services.nix-serve.enable = true;
         services.nginx = {
           enable = true;
