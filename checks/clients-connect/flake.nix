@@ -10,12 +10,15 @@
 
       mkSystem = name: lib.nixosSystem {
         inherit system;
-        modules = [{
+        modules = [
+        (nixpkgs + "/nixos/lib/testing/nixos-test-base.nix")
+        {
+          boot.loader.grub.enable = false;
           networking.hostName = name;
         }];
       };
     in
     {
-      nixosConfigurations = lib.genAttrs [ "alpha" "beta" "gamma" ] mkSystem;
+      nixosConfigurations = lib.genAttrs [ "alpha" ] mkSystem;
     };
 }
