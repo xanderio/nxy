@@ -5,7 +5,7 @@
   perSystem = { pkgs, lib, ... }:
     let
       server = "server"; # Node configurated as nxy server
-      clients = [ "alpha" "beta" "gamma" ]; # Nodes configurated as nxy clients
+      clients = [ "alpha" ]; # Nodes configurated as nxy clients
 
       # Utilities
       nixosLib = import (pkgs.path + "/nixos/lib") { };
@@ -43,6 +43,7 @@
               let
                 inherit (self.inputs) nixpkgs;
                 nixpkgsPath = "path:${nixpkgs.outPath}?narHash=${nixpkgs.narHash}";
+                nxyPath = "path:${self.outPath}?narHash=${self.narHash}";
               in
               ''
                 clients = ${clientList}
@@ -52,6 +53,7 @@
                 server.succeed("cp --no-preserve=mode -r ${flake} /tmp/flake && chmod u+w /tmp/flake")
 
                 server.succeed("sed -i 's @nixpkgs@ ${nixpkgsPath} g' /tmp/flake/flake.nix")
+                server.succeed("sed -i 's @nxy@ ${nxyPath} g' /tmp/flake/flake.nix")
                 server.succeed("cd /tmp/flake && nix --extra-experimental-features \"nix-command flakes\" flake lock")
               
                 with subtest("Create git repository and commit flake"):
@@ -113,6 +115,8 @@
         nix.registry.nixpkgs.flake = inputs.nixpkgs;
         nix.settings.experimental-features = [ "nix-command" "flakes" ];
         virtualisation = {
+          memorySize = 3072;
+          diskSize = 4096;
           # The server needs to be able to write to the store 
           # in order to build new system configurations
           writableStore = true;
@@ -123,6 +127,7 @@
 
             # used in tests
             pkgs.hello
+            pkgs.nxy-agent
           ];
         };
       };
