@@ -47,6 +47,10 @@ pub(crate) enum AgentAction {
         agent_id: Uuid,
         store_path: String,
     },
+    Activate {
+        agent_id: Uuid,
+        store_path: String,
+    },
 }
 
 #[derive(Subcommand)]

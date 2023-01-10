@@ -18,6 +18,10 @@ pub(crate) fn handle(action: AgentAction, format: Format) -> Result<()> {
             agent_id,
             store_path,
         } => download_store_path(agent_id, store_path),
+        AgentAction::Activate {
+            agent_id,
+            store_path,
+        } => activate(agent_id, store_path),
     }
 }
 
@@ -48,6 +52,13 @@ fn set_configuration(agent_id: Uuid, config_id: i64) -> Result<()> {
 
 fn download_store_path(agent_id: Uuid, store_path: String) -> Result<()> {
     ureq::post(&format_url(&format!("/api/v1/agent/{agent_id}/download")))
+        .send_json(ureq::json!({ "store_path": store_path }))
+        .unwrap();
+    Ok(())
+}
+
+fn activate(agent_id: Uuid, store_path: String) -> Result<()> {
+    ureq::post(&format_url(&format!("/api/v1/agent/{agent_id}/activate")))
         .send_json(ureq::json!({ "store_path": store_path }))
         .unwrap();
     Ok(())

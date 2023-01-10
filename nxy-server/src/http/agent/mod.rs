@@ -19,6 +19,7 @@ pub(crate) fn router() -> Router<ApiContext> {
             "/api/v1/agent/:agent_id/download",
             post(download_store_path),
         )
+        .route("/api/v1/agent/:agent_id/activate", post(activate))
 }
 
 #[derive(Serialize)]
@@ -77,6 +78,26 @@ async fn download_store_path(
         .download(nxy_common::types::DownloadParams {
             store_path: req.store_path.into(),
             from: ctx.config.external_url.clone(),
+        })
+        .await
+        .map_err(Into::into)
+}
+
+#[derive(Deserialize)]
+struct ActivateParams {
+    store_path: String,
+}
+
+async fn activate(
+    ctx: State<ApiContext>,
+    Path(agent_id): Path<Uuid>,
+    Json(req): Json<ActivateParams>,
+) -> Result<()> {
+    let agent = ctx.agent_manager.get(agent_id).unwrap();
+
+    agent
+        .activate(nxy_common::types::ActivateParams {
+            store_path: req.store_path.into(),
         })
         .await
         .map_err(Into::into)

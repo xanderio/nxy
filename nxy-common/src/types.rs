@@ -21,3 +21,8 @@ pub struct DownloadParams {
     pub store_path: PathBuf,
     pub from: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActivateParams {
+    pub store_path: PathBuf,
+}

@@ -91,6 +91,7 @@ async fn handle_request(request: Request) -> Result<Response> {
         "$/ping" => handler::ping(&request),
         "$/status" => handler::status(&request).await,
         "$/download" => handler::download(&request).await,
+        "$/activate" => handler::activate(&request).await,
         _ => handler::unknown(&request),
     };
     tracing::debug!("done processing request");

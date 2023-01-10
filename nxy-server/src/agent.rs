@@ -7,7 +7,7 @@ use std::{
 
 use color_eyre::{eyre::eyre, Result};
 use nxy_common::{
-    types::{DownloadParams, Status},
+    types::{ActivateParams, DownloadParams, Status},
     JsonRPC, Request, RequestId, Response,
 };
 use serde::Serialize;
@@ -238,6 +238,15 @@ impl Agent {
 
     pub(crate) async fn download(&self, params: DownloadParams) -> Result<()> {
         let res = self.send_request("$/download", params).await.await?;
+        if let Some(error) = res.error {
+            Err(eyre!("request error: {:?}", error))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) async fn activate(&self, params: ActivateParams) -> Result<()> {
+        let res = self.send_request("$/activate", params).await.await?;
         if let Some(error) = res.error {
             Err(eyre!("request error: {:?}", error))
         } else {

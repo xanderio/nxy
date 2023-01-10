@@ -25,7 +25,10 @@ pub(crate) async fn activate(profile: String, store_path: StorePath) -> Result<(
 
     //TODO: how to protect this from service restart?
     let output = Command::new(ac).arg("switch").output().await?;
-    ensure!(output.status.success(), "failed to switch profile");
+    if !output.status.success() {
+        tracing::error!(stderr = %String::from_utf8_lossy(&output.stderr), stdout = %String::from_utf8_lossy(&output.stdout), "failed to switch profile");
+        bail!("failed to switch profile")
+    }
     Ok(())
 }
 

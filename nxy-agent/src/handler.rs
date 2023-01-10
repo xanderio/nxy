@@ -5,7 +5,7 @@ use color_eyre::{
     Result,
 };
 use nxy_common::{
-    types::{DownloadParams, Status, System},
+    types::{ActivateParams, DownloadParams, Status, System},
     ErrorCode, Request, Response,
 };
 use serde_json::json;
@@ -66,6 +66,14 @@ pub(super) async fn download(request: &Request) -> Result<Response> {
         println!("{}", String::from_utf8_lossy(&output.stderr));
         bail!("nix copy failed");
     }
+
+    Ok(Response::new_ok(request.id, ()))
+}
+
+pub(super) async fn activate(request: &Request) -> Result<Response> {
+    let params: ActivateParams = serde_json::from_value(request.params.clone())?;
+
+    crate::activate::activate("system".to_string(), params.store_path).await?;
 
     Ok(Response::new_ok(request.id, ()))
 }
