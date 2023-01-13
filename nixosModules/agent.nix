@@ -19,12 +19,23 @@ in
       self.overlays.default
     ];
 
+
     systemd.services.nxy-agent = {
       enable = true;
       wantedBy = [ "multi-user.target" ];
       after = [ "nix-deamon.service" ];
-      path = [ pkgs.nix ];
-      script = "${pkgs.nxy-agent}/bin/nxy-agent /var/lib/nxy ${cfg.server}";
+      path = [ config.nix.package ];
+
+      # don't stop the service if the unit disappers
+      unitConfig.X-StopOnRemoval = false;
+
+      serviceConfig = {
+        # we don't want to kill childern processes as those are deployments
+        KillMode = "process";
+        Restart = "always";
+        RestartSec = 5;
+        ExecStart = "${pkgs.nxy-agent}/bin/nxy-agent /var/lib/nxy ${cfg.server}";
+      };
     };
   };
 }
