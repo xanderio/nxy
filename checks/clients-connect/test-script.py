@@ -11,3 +11,10 @@ with subtest("copy store path to agent"):
 
 with subtest("activate configuration"):
     server.succeed(f"NXY_SERVER=http://server nxy-cli agents activate {agent_id} {test_store_path}")
+
+with subtest("profile switched to new path"):
+    profile_path = alpha.succeed("readlink -f /nix/var/nix/profiles/system").strip()
+    
+    print(test_store_path)
+    print(profile_path)
+    assert profile_path == test_store_path
