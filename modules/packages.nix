@@ -1,12 +1,13 @@
 {
-  perSystem = { rustPkgs, ... }:
+  perSystem = { lib, commonArgs, craneLib, cargoArtifacts, ... }:
     {
-      packages = rec {
-        nxy-server = rustPkgs.workspace.nxy-server { };
-        nxy-agent = rustPkgs.workspace.nxy-agent { };
-        nxy-cli = rustPkgs.workspace.nxy-cli { };
-
-        default = nxy-server;
-      };
+      packages =
+        let
+          mkPackage = name: craneLib.buildPackage (commonArgs // {
+            inherit cargoArtifacts;
+            cargoExtraArgs = "--package ${name}";
+          } // craneLib.crateNameFromCargoToml { src = ./../${name}; });
+        in
+        lib.genAttrs [ "nxy-server" "nxy-cli" "nxy-agent" ] mkPackage;
     };
 }
