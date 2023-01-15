@@ -1,15 +1,11 @@
-use std::{io, path::PathBuf};
+use std::{io, path::PathBuf, process::Command};
 
-use color_eyre::{
-    eyre::{bail, ensure},
-    Result,
-};
+use color_eyre::{eyre::bail, Result};
 use nxy_common::{
     types::{ActivateParams, DownloadParams, Status, System},
     ErrorCode, Request, Response,
 };
 use serde_json::json;
-use tokio::process::Command;
 use tracing::instrument;
 
 use crate::STATE;
@@ -20,19 +16,19 @@ pub(super) fn ping(request: &Request) -> Result<Response> {
     Ok(Response::new_ok(request.id, "pong"))
 }
 
-async fn current_system() -> io::Result<PathBuf> {
-    tokio::fs::read_link("/run/current-system").await
+fn current_system() -> io::Result<PathBuf> {
+    std::fs::read_link("/run/current-system")
 }
 
-async fn booted_system() -> io::Result<PathBuf> {
-    tokio::fs::read_link("/run/booted-system").await
+fn booted_system() -> io::Result<PathBuf> {
+    std::fs::read_link("/run/booted-system")
 }
 
 #[instrument(skip(request))]
-pub(super) async fn status(request: &Request) -> Result<Response> {
+pub(super) fn status(request: &Request) -> Result<Response> {
     let system = System {
-        current: current_system().await?,
-        booted: booted_system().await?,
+        current: current_system()?,
+        booted: booted_system()?,
     };
     let id = {
         let state = STATE.lock().unwrap();
@@ -47,7 +43,7 @@ pub(super) async fn status(request: &Request) -> Result<Response> {
     Ok(Response::new_ok(request.id, json!(status)))
 }
 
-pub(super) async fn download(request: &Request) -> Result<Response> {
+pub(super) fn download(request: &Request) -> Result<Response> {
     let params: DownloadParams = serde_json::from_value(request.params.clone())?;
 
     let mut cmd = Command::new("nix");
@@ -61,7 +57,7 @@ pub(super) async fn download(request: &Request) -> Result<Response> {
     ]);
     cmd.arg(params.store_path);
 
-    let output = cmd.output().await?;
+    let output = cmd.output()?;
     if !output.status.success() {
         println!("{}", String::from_utf8_lossy(&output.stderr));
         bail!("nix copy failed");
@@ -70,10 +66,10 @@ pub(super) async fn download(request: &Request) -> Result<Response> {
     Ok(Response::new_ok(request.id, ()))
 }
 
-pub(super) async fn activate(request: &Request) -> Result<Response> {
+pub(super) fn activate(request: &Request) -> Result<Response> {
     let params: ActivateParams = serde_json::from_value(request.params.clone())?;
 
-    crate::activate::activate("system".to_string(), params.store_path).await?;
+    crate::activate::activate("system".to_string(), params.store_path)?;
 
     Ok(Response::new_ok(request.id, ()))
 }

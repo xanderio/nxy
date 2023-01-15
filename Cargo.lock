@@ -146,7 +146,7 @@ dependencies = [
  "sha-1",
  "sync_wrapper",
  "tokio",
- "tokio-tungstenite 0.17.2",
+ "tokio-tungstenite",
  "tower",
  "tower-http",
  "tower-layer",
@@ -1213,16 +1213,14 @@ name = "nxy-agent"
 version = "0.1.0"
 dependencies = [
  "color-eyre",
- "futures-util",
  "nxy-common",
  "once_cell",
  "serde",
  "serde_json",
- "tokio",
- "tokio-tungstenite 0.18.0",
  "tracing",
  "tracing-error",
  "tracing-subscriber",
+ "tungstenite 0.18.0",
  "uuid",
 ]
 
@@ -2077,18 +2075,6 @@ dependencies = [
  "log",
  "tokio",
  "tungstenite 0.17.3",
-]
-
-[[package]]
-name = "tokio-tungstenite"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54319c93411147bced34cb5609a80e0a8e44c5999c93903a81cd866630ec0bfd"
-dependencies = [
- "futures-util",
- "log",
- "tokio",
- "tungstenite 0.18.0",
 ]
 
 [[package]]

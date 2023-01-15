@@ -1,11 +1,10 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf, process::Command};
 
 use color_eyre::{
     eyre::{bail, ensure},
     Result,
 };
 use serde::Deserialize;
-use tokio::process::Command;
 
 pub(crate) type StorePath = PathBuf;
 
@@ -15,16 +14,16 @@ pub(crate) type StorePath = PathBuf;
 ///
 /// * `profile` - Profile name
 /// * `store_path` - Store path to activate
-pub(crate) async fn activate(profile: String, store_path: StorePath) -> Result<()> {
-    if !is_nixos_system(&store_path).await? {
+pub(crate) fn activate(profile: String, store_path: StorePath) -> Result<()> {
+    if !is_nixos_system(&store_path)? {
         bail!("only nixos profiles are currently supported");
     }
 
-    set_profile(&profile, &store_path).await?;
+    set_profile(&profile, &store_path)?;
     let ac = get_activation_script(&store_path);
 
     //TODO: how to protect this from service restart?
-    let output = Command::new(ac).arg("switch").output().await?;
+    let output = Command::new(ac).arg("switch").output()?;
     if !output.status.success() {
         tracing::error!(stderr = %String::from_utf8_lossy(&output.stderr), stdout = %String::from_utf8_lossy(&output.stdout), "failed to switch profile");
         bail!("failed to switch profile")
@@ -42,7 +41,7 @@ pub(crate) async fn activate(profile: String, store_path: StorePath) -> Result<(
 /// # Returns
 ///
 /// store path of the build configuration
-pub(crate) async fn build_system(flake_url: String, name: String) -> Result<StorePath> {
+pub(crate) fn build_system(flake_url: String, name: String) -> Result<StorePath> {
     let mut cmd = Command::new("nix");
     cmd.arg("build");
     cmd.arg("--no-link");
@@ -51,7 +50,7 @@ pub(crate) async fn build_system(flake_url: String, name: String) -> Result<Stor
         "{flake_url}#nixosConfigurations.{name}.config.system.build.toplevel"
     ));
 
-    let output = cmd.output().await?;
+    let output = cmd.output()?;
     ensure!(output.status.success(), "nix build failed");
 
     #[derive(Deserialize)]
@@ -63,7 +62,7 @@ pub(crate) async fn build_system(flake_url: String, name: String) -> Result<Stor
 }
 
 /// Set `profile` to `store_path`
-async fn set_profile(profile: &str, store_path: &StorePath) -> Result<()> {
+fn set_profile(profile: &str, store_path: &StorePath) -> Result<()> {
     let system_profiles_dir = PathBuf::from("/nix/var/nix/profiles");
     let profile_dir = system_profiles_dir.join(profile);
 
@@ -73,14 +72,14 @@ async fn set_profile(profile: &str, store_path: &StorePath) -> Result<()> {
     cmd.arg("--set");
     cmd.arg(store_path);
 
-    let output = cmd.output().await?;
+    let output = cmd.output()?;
     ensure!(output.status.success(), "updating profile failed");
 
     Ok(())
 }
 
 /// Returns `true` if `store_path` points to a NixOS system configuration
-async fn is_nixos_system(store_path: &StorePath) -> std::io::Result<bool> {
+fn is_nixos_system(store_path: &StorePath) -> std::io::Result<bool> {
     store_path.join("nixos-version").try_exists()
 }
 

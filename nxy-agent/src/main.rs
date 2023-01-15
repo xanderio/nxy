@@ -1,12 +1,10 @@
-use std::{env::args, path::PathBuf, sync::Mutex, time::Duration};
+use std::{env::args, net::TcpStream, path::PathBuf, sync::Mutex, time::Duration};
 
 use color_eyre::Result;
-use futures_util::{SinkExt, TryStreamExt};
 use once_cell::sync::Lazy;
 use state::State;
-use tokio::net::TcpStream;
-use tokio_tungstenite::{connect_async, tungstenite::Message, MaybeTlsStream, WebSocketStream};
 use tracing::instrument;
+use tungstenite::{client::connect, stream::MaybeTlsStream, Message, WebSocket};
 
 use nxy_common::{JsonRPC, Request, Response};
 
@@ -22,9 +20,8 @@ pub static STATE: Lazy<Mutex<State>> = Lazy::new(|| {
     Mutex::new(state)
 });
 
-#[tokio::main]
 #[instrument]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     install_tracing();
     color_eyre::install()?;
 
@@ -32,18 +29,19 @@ async fn main() -> Result<()> {
         .nth(2)
         .expect("second argument must be server address eg. ws://localhost:8080");
 
-    run(&server_url).await
+    run(&server_url)
 }
 
-async fn run(server_url: &str) -> Result<()> {
+fn run(server_url: &str) -> Result<()> {
     loop {
-        let (mut ws, _) = connect(server_url).await?;
-        while let Ok(Some(msg)) = ws.try_next().await {
+        let (mut socket, _) = connect_with_backoff(server_url)?;
+        loop {
+            let msg = socket.read_message()?;
             let rpc: JsonRPC = msg.into_text()?.parse()?;
             match rpc {
                 JsonRPC::Request(request) => {
-                    let res: JsonRPC = handle_request(request).await?.into();
-                    ws.send(Message::Text(res.to_string())).await?;
+                    let res: JsonRPC = handle_request(request)?.into();
+                    socket.write_message(Message::Text(res.to_string()))?;
                 }
                 JsonRPC::Response(res) => {
                     tracing::warn!(?res, "received response, this should happen")
@@ -54,15 +52,15 @@ async fn run(server_url: &str) -> Result<()> {
     }
 }
 
-async fn connect(
+fn connect_with_backoff(
     server_url: &str,
 ) -> Result<(
-    WebSocketStream<MaybeTlsStream<TcpStream>>,
-    tokio_tungstenite::tungstenite::http::Response<Option<Vec<u8>>>,
+    WebSocket<MaybeTlsStream<TcpStream>>,
+    tungstenite::handshake::client::Response,
 )> {
     let mut retry_period = Duration::from_millis(500);
     loop {
-        match connect_async(format!("{server_url}/api/v1/agent/ws")).await {
+        match connect(format!("{server_url}/api/v1/agent/ws")) {
             Ok(ws) => return Ok(ws),
             Err(e) => {
                 tracing::warn!(
@@ -70,7 +68,7 @@ async fn connect(
                     retry_period
                 );
                 tracing::debug!(?e);
-                tokio::time::sleep(retry_period).await;
+                std::thread::sleep(retry_period);
                 retry_period = backoff(retry_period);
             }
         }
@@ -85,13 +83,13 @@ fn backoff(duration: Duration) -> Duration {
 }
 
 #[instrument(skip_all, err, fields(id = %request.id, method = request.method))]
-async fn handle_request(request: Request) -> Result<Response> {
+fn handle_request(request: Request) -> Result<Response> {
     tracing::debug!("start processing request");
     let response = match request.method.as_str() {
         "$/ping" => handler::ping(&request),
-        "$/status" => handler::status(&request).await,
-        "$/download" => handler::download(&request).await,
-        "$/activate" => handler::activate(&request).await,
+        "$/status" => handler::status(&request),
+        "$/download" => handler::download(&request),
+        "$/activate" => handler::activate(&request),
         _ => handler::unknown(&request),
     };
     tracing::debug!("done processing request");
