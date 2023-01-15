@@ -1,7 +1,6 @@
-use std::{collections::HashMap, path::PathBuf, process::Command};
+use std::{path::PathBuf, process::Command};
 
 use eyre::{bail, ensure, Result};
-use serde::Deserialize;
 
 pub(crate) type StorePath = PathBuf;
 
@@ -26,36 +25,6 @@ pub(crate) fn activate(profile: String, store_path: StorePath) -> Result<()> {
         bail!("failed to switch profile")
     }
     Ok(())
-}
-
-/// Build configuration
-///
-/// # Arguments
-///
-/// * `flake_url` - nix compatible flake URL, preferable with ref specified
-/// * `name` - attribute of nixosConfigurations to build
-///
-/// # Returns
-///
-/// store path of the build configuration
-pub(crate) fn build_system(flake_url: String, name: String) -> Result<StorePath> {
-    let mut cmd = Command::new("nix");
-    cmd.arg("build");
-    cmd.arg("--no-link");
-    cmd.arg("--json");
-    cmd.arg(format!(
-        "{flake_url}#nixosConfigurations.{name}.config.system.build.toplevel"
-    ));
-
-    let output = cmd.output()?;
-    ensure!(output.status.success(), "nix build failed");
-
-    #[derive(Deserialize)]
-    struct BuildResult {
-        outputs: HashMap<String, StorePath>,
-    }
-    let json: Vec<BuildResult> = serde_json::from_slice(&output.stdout)?;
-    Ok(json.first().unwrap().outputs.get("out").unwrap().clone())
 }
 
 /// Set `profile` to `store_path`
