@@ -1,6 +1,6 @@
 use std::{io, path::PathBuf, process::Command};
 
-use color_eyre::{eyre::bail, Result};
+use eyre::{bail, Result};
 use nxy_common::{
     types::{ActivateParams, DownloadParams, Status, System},
     ErrorCode, Request, Response,

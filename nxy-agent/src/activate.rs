@@ -1,9 +1,6 @@
 use std::{collections::HashMap, path::PathBuf, process::Command};
 
-use color_eyre::{
-    eyre::{bail, ensure},
-    Result,
-};
+use eyre::{bail, ensure, Result};
 use serde::Deserialize;
 
 pub(crate) type StorePath = PathBuf;

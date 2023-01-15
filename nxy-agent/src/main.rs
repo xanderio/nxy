@@ -1,6 +1,6 @@
 use std::{env::args, net::TcpStream, path::PathBuf, sync::Mutex, time::Duration};
 
-use color_eyre::Result;
+use eyre::Result;
 use once_cell::sync::Lazy;
 use state::State;
 use tracing::instrument;
@@ -23,7 +23,6 @@ pub static STATE: Lazy<Mutex<State>> = Lazy::new(|| {
 #[instrument]
 fn main() -> Result<()> {
     install_tracing();
-    color_eyre::install()?;
 
     let server_url = std::env::args()
         .nth(2)
