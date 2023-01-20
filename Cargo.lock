@@ -1209,6 +1209,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "nxy"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "color-eyre",
+ "serde",
+ "serde_json",
+ "tabled",
+ "ureq",
+ "uuid",
+]
+
+[[package]]
 name = "nxy-agent"
 version = "0.1.0"
 dependencies = [
@@ -1221,19 +1234,6 @@ dependencies = [
  "tracing-error",
  "tracing-subscriber",
  "tungstenite 0.18.0",
- "uuid",
-]
-
-[[package]]
-name = "nxy-cli"
-version = "0.1.0"
-dependencies = [
- "clap",
- "color-eyre",
- "serde",
- "serde_json",
- "tabled",
- "ureq",
  "uuid",
 ]
 
