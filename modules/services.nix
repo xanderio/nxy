@@ -21,7 +21,7 @@
               format console
             }
           }
-          http://localhost:8080
+          http://:8080
           reverse_proxy http://localhost:8085
           reverse_proxy /nar/* unix//${nixServeSocket}
           reverse_proxy /*.narinfo unix//${nixServeSocket}
